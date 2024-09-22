@@ -7,14 +7,15 @@ run:
 pip install -r requirement.txt 
 
 # Tasks:
-- Fetch data from API to save in SQLite:
+- Fetch data from API to save in SQLite: Huy
 - Flask Back End:
-    + List:
-    + Detail:
-    + Create:
-    + Update:
-    + Delete:
-    + Search:
+    + List: Huy
+    + Detail: Huy
+    + Create: Huy
+    + Update: Huy
+    + Delete: Huy
+    + Search: 
+    + Compare options:
 - UI Front End:
     + List page (+ search):
     + Detail page:
