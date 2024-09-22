@@ -8,6 +8,17 @@ pip install -r requirement.txt
 
 # Tasks:
 - Fetch data from API to save in SQLite:
-- Flask Back End: Huy
+- Flask Back End:
+    + List:
+    + Detail:
+    + Create:
+    + Update:
+    + Delete:
+    + Search:
 - UI Front End:
+    + List page (+ search):
+    + Detail page:
+    + Create page:
+    + Update page:
+    + Delete page:
 - Powerpoint reports:
