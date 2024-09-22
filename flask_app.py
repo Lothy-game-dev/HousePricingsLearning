@@ -54,27 +54,6 @@ def get_flight(id):
     flight = FlightData.query.get_or_404(id)
     return render_template('flight.html', flight=flight)
 
-# Update a flight by ID
-@app.route('/flights/<int:id>', methods=['PUT'])
-def update_flight(id):
-    data = request.get_json()
-    flight = FlightData.query.get_or_404(id)
-    flight.departure_airport = data['departure_airport']
-    flight.arrival_airport = data['arrival_airport']
-    flight.departure_time = data['departure_time']
-    flight.arrival_time = data['arrival_time']
-    flight.price = data['price']
-    db.session.commit()
-    return jsonify({'message': 'Flight updated successfully'})
-
-# Delete a flight by ID
-@app.route('/flights/<int:id>', methods=['DELETE'])
-def delete_flight(id):
-    flight = FlightData.query.get_or_404(id)
-    db.session.delete(flight)
-    db.session.commit()
-    return jsonify({'message': 'Flight deleted successfully'})
-
 # Search for flights by departure and arrival airports
 @app.route('/flights/search', methods=['GET'])
 def search_flights():
