@@ -1,5 +1,6 @@
 # Environment
 rename .env.example thành .env
+API key trong .env không phải thật, nếu cần API key để access vui lòng liên hệ Huy
 
 # Requirements
 run:
