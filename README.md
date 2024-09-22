@@ -6,5 +6,8 @@ API key liên hệ Long để lấy, data sẽ lấy từ API fetch về databas
 run:
 pip install -r requirement.txt 
 
-# Usages
-Fetch data from API to save in SQLite:
+# Tasks:
+- Fetch data from API to save in SQLite:
+- Flask Back End: Huy
+- UI Front End:
+- Powerpoint reports:
