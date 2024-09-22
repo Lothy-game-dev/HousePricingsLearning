@@ -11,12 +11,12 @@ pip install -r requirement.txt
 - Flask Back End:
     + List: Huy
     + Detail: Huy
-    + Search: 
-    + Compare options:
+    + Search: Linh
+    + Compare options: Linh
 - UI Front End:
     + List page (+ search):
     + Detail page:
-- Powerpoint reports:
+- PowerPoint reports:
     + Text:
     + Images:
 - Reporters:
