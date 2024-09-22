@@ -11,15 +11,12 @@ pip install -r requirement.txt
 - Flask Back End:
     + List: Huy
     + Detail: Huy
-    + Create: Huy
-    + Update: Huy
-    + Delete: Huy
     + Search: 
     + Compare options:
 - UI Front End:
     + List page (+ search):
     + Detail page:
-    + Create page:
-    + Update page:
-    + Delete page:
 - Powerpoint reports:
+    + Text:
+    + Images:
+- Reporters:
