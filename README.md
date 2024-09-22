@@ -17,6 +17,6 @@ pip install -r requirement.txt
     + List page (+ search):
     + Detail page:
 - PowerPoint reports:
-    + Text:
-    + Images:
+    + Text:Phú
+    + Images:Phú
 - Reporters:
