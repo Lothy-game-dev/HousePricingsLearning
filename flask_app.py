@@ -1,31 +1,8 @@
-from flask import Flask, request, jsonify, render_template
-from flask_sqlalchemy import SQLAlchemy
-from dotenv import load_dotenv
-import os
+from flask import request, jsonify, render_template
 
-# Load environment variables from .env file
-load_dotenv()
+from data_retriever import FlightData
+from models import db, app, Airports
 
-# Initialize Flask app and SQLAlchemy
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///flights_data.db'
-db = SQLAlchemy(app)
-
-# Define the FlightData model
-class FlightData(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    departure_airport = db.Column(db.String(100), nullable=False)
-    arrival_airport = db.Column(db.String(100), nullable=False)
-    departure_time = db.Column(db.String(100), nullable=False)
-    arrival_time = db.Column(db.String(100), nullable=False)
-    price = db.Column(db.String(100), nullable=False)
-
-    def __repr__(self):
-        return f'<FlightData {self.departure_airport} to {self.arrival_airport}>'
-
-# Create the database tables
-with app.app_context():
-    db.create_all()
 
 # Create a new flight
 @app.route('/flights', methods=['POST'])
@@ -59,8 +36,14 @@ def get_flight(id):
 def search_flights():
     departure_airport = request.args.get('departure_airport')
     arrival_airport = request.args.get('arrival_airport')
-    flights = FlightData.query.filter_by(departure_airport=departure_airport, arrival_airport=arrival_airport).all()
-    return render_template('flights.html', flights=flights)
+    departure_airport = Airports.query.filter_by(key=departure_airport).first()
+    arrival_airport = Airports.query.filter_by(key=arrival_airport).first()
+    flights = FlightData.query.filter_by(departure_airport_id=departure_airport.id, arrival_airport_id=arrival_airport.id).all()
+    return jsonify({
+        'departure_airport': departure_airport.serialize(),
+        'arrival_airport': arrival_airport.serialize(),
+        'flights': [flight.serialize() for flight in flights]
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,32 +1,10 @@
 import os
+
 import requests
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from dotenv import load_dotenv, set_key
-import json
-import datetime
+from dotenv import set_key
 
-# Load environment variables from .env file
-load_dotenv()
+from models import Airports, db, app, FlightData
 
-# Initialize Flask app and SQLAlchemy
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///flights_data.db'
-db = SQLAlchemy(app)
-
-# Define the FlightData model
-class FlightData(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    departure_airport_id = db.Column(db.Integer, db.ForeignKey('airports.id'), nullable=False)
-    arrival_airport_id = db.Column(db.Integer, db.ForeignKey('airports.id'), nullable=False)
-    flight_date = db.Column(db.String(20), nullable=False)
-    departure_time = db.Column(db.String(20), nullable=False)
-    arrival_time = db.Column(db.String(20), nullable=False)
-
-class Airports(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    key = db.Column(db.String(3), nullable=False)
-    name = db.Column(db.String(100), nullable=False)
 
 def retrieve_flight_data(departure_airport, end_airport, departure_date):
     url = 'https://api.aviationstack.com/v1/flights'
