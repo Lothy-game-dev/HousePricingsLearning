@@ -14,6 +14,8 @@ class RouteData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     departure_airport_id = db.Column(db.Integer, db.ForeignKey('airports.id'), nullable=False)
     arrival_airport_id = db.Column(db.Integer, db.ForeignKey('airports.id'), nullable=False)
+    departure_date = db.Column(db.String(20), nullable=False)
+    end_date = db.Column(db.String(20), nullable=False)
     # in USD
     total_price = db.Column(db.Float, nullable=False)
     # in minutes
@@ -24,6 +26,8 @@ class RouteData(db.Model):
             'id': self.id,
             'departure_airport': self.departure_airport_id,
             'arrival_airport': self.arrival_airport_id,
+            'departure_date': self.departure_date,
+            'end_date': self.end_date,
             'total_price': self.total_price,
             'total_duration': self.total_duration
         }
