@@ -26,10 +26,8 @@ def get_flight(id):
 def search_flights():
     # temp
     departure_airport_id = request.args.get('departure_airport')
-    print(departure_airport_id)
     departure_airport = db.session.query(Airports.key).filter_by(id=departure_airport_id).first()[0]
     arrival_airport_id = request.args.get('arrival_airport')
-    print(arrival_airport_id)
     arrival_airport = db.session.query(Airports.key).filter_by(id=arrival_airport_id).first()[0]
     departure_date = request.args.get('departure_date')
     arrival_date = request.args.get('arrival_date')
@@ -39,6 +37,7 @@ def search_flights():
         'departure_date': departure_date,
         'arrival_date': arrival_date
     }
+    print(data_chosen)
     try:
         flights = retrieve_flight_data(departure_airport, arrival_airport, departure_date, arrival_date)
     except Exception as e:
