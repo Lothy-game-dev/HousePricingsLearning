@@ -40,6 +40,7 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
 
     # Make the API request
     response = requests.get(url, params=params, headers=headers)
+    print(response.request.url)
 
     # If the request is successful, process the response data
     if response.status_code == 200:
@@ -61,7 +62,8 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                     'departure_date': departure_date,
                     'end_date': end_date,
                     'total_price': flight['price'],
-                    'total_duration': flight['total_duration']
+                    'total_duration': flight['total_duration'],
+                    'flights': [],
                 }
                 # Save the route data to the database
                 new_route = RouteData(
@@ -95,7 +97,8 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                     db.session.add(new_flight)
                     db.session.commit()
                     print('Add best flight data to database success')
-                    flight_return_data.append(new_flight.serialize())
+                    route_data_to_save['flights'].append(new_flight.serialize())
+                flight_return_data.append(route_data_to_save)
 
             # Process the other flights
             for flight in flight_data.get('other_flights', []):
@@ -106,7 +109,8 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                     'departure_date': departure_date,
                     'end_date': end_date,
                     'total_price': flight['price'],
-                    'total_duration': flight['total_duration']
+                    'total_duration': flight['total_duration'],
+                    'flights': [],
                 }
                 # Save the route data to the database
                 new_route = RouteData(
@@ -140,7 +144,8 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                     db.session.add(new_flight)
                     db.session.commit()
                     print('Add other flight data to database success')
-                    flight_return_data.append(new_flight.serialize())
+                    route_data_to_save['flights'].append(new_flight.serialize())
+                flight_return_data.append(route_data_to_save)
             return flight_return_data
         else:
             print('No flight data found')

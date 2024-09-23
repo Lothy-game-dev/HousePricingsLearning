@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airport Index</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        body {
+            background-image: url('https://static.vecteezy.com/system/resources/previews/042/197/321/non_2x/ai-generated-sky-with-airplane-background-free-photo.jpg');
+            background-size: cover;
+            background-position: top;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+        }
+        .container {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 50px;
+        }
+        h1 {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group label {
+            font-weight: bold;
+        }
+        .btn-primary {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+            margin-right: 10px;
+        }
+        .form-group:last-child {
+            margin-right: 0;
+        }
+        .list-group-item {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+    </style>
+    <script>
+        function validateForm() {
+            var departure = document.getElementById("departure_airport").value;
+            var arrival = document.getElementById("arrival_airport").value;
+            if (departure === arrival) {
+                alert("Departure and Arrival airports cannot be the same.");
+                return false;
+            }
+            return true;
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Search Flights</h1>
+        <form action="/flights/search" method="get" class="mt-3" onsubmit="return validateForm()">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="departure_airport">Departure Airport</label>
+                    <select class="form-control" id="departure_airport" name="departure_airport">
+                        {% for airport in airports %}
+                            <option value="{{ airport.id }}" {% if data_chosen.departure_airport == airport.id %}selected{% endif %}>{{ airport.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="arrival_airport">Arrival Airport</label>
+                    <select class="form-control" id="arrival_airport" name="arrival_airport">
+                        {% for airport in airports %}
+                            <option value="{{ airport.id }}" {% if data_chosen.arrival_airport == airport.id %}selected{% endif %}>{{ airport.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="departure_date">Departure Date</label>
+                    <input type="date" class="form-control" id="departure_date" name="departure_date" value="{{ data_chosen.departure_date }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="arrival_date">Arrival Date</label>
+                    <input type="date" class="form-control" id="arrival_date" name="arrival_date" value="{{ data_chosen.arrival_date }}" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Search</button>
+        </form>
+    </div>
+    {% if flights is not none %}
+    <div class="container mt-5" id="results-container">
+        <h2>Flight Results</h2>
+        <div id="results">
+            <ul class="list-group">
+                {% for flight in flights %}
+                    <li class="list-group-item" style="color: black; position: relative; cursor: pointer;" onclick="window.location.href='/flight/{{ flight.id }}'">
+                        <h5>Route ID: {{ flight.id }}</h5>
+                        <p>Departure: {{ flight.departure_airport_id }} - Arrival: {{ flight.arrival_airport_id }}</p>
+                        <p>Departure Date: {{ flight.departure_date }} - Arrival Date: {{ flight.end_date }}</p>
+                        <p>Total Price: {{ flight.total_price }} - Total Duration: {{ flight.total_duration }}</p>
+                        <ul>
+                            {% for inner_flight in flight.flights %}
+                                <li>
+                                    <p>Departure: {{ inner_flight.departure_airport }} - Arrival: {{ inner_flight.arrival_airport }}</p>
+                                    <p>Departure Time: {{ inner_flight.departure_time }} - Arrival Time: {{ inner_flight.arrival_time }}</p>
+                                    <img src="{{ inner_flight.airline_logo }}" alt="Airline Logo">
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        <a href="/flight/{{ flight.id }}" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 24px;">
+                            &rarr;
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% elif flights == [] %}
+        <div class="container mt-5" id="results-container">
+            <h2>No Flights Found</h2>
+            <p>Sorry, no flights were found for the selected criteria. Please try again with different parameters.</p>
+        </div>
+    {% endif %}
+</body>
+</html>
