@@ -20,3 +20,6 @@ pip install -r requirement.txt
     + Text:Phú
     + Images:Phú
 - Reporters:
+
+# Errors:
+- [NoneType] object: Vào .env, đổi biến AVIATION_DATA_SAVED='false', và run python data_retriever.py

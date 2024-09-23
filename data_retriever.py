@@ -7,6 +7,17 @@ from models import Airports, db, app, FlightData, RouteData
 
 
 def retrieve_flight_data(departure_airport, end_airport, departure_date, end_date):
+    existing_routes = RouteData.query.filter_by(
+        departure_airport_id=db.session.query(Airports.id).filter_by(key=departure_airport).first()[0],
+        arrival_airport_id=db.session.query(Airports.id).filter_by(key=end_airport).first()[0],
+        departure_date=departure_date,
+        end_date=end_date,
+    ).all()
+
+    if existing_routes:
+        print(f'{len(existing_routes)} existing routes found')
+        return [route.serialize() for route in existing_routes]
+
     url = 'https://serpapi.com/search'
 
     params = {
@@ -37,12 +48,16 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                 route_data_to_save = {
                     'departure_airport_id': departure_airport_id,
                     'arrival_airport_id': end_airport_id,
+                    'departure_date': departure_date,
+                    'end_date': end_date,
                     'total_price': flight['price'],
                     'total_duration': flight['total_duration']
                 }
                 new_route = RouteData(
                     departure_airport_id=route_data_to_save['departure_airport_id'],
                     arrival_airport_id=route_data_to_save['arrival_airport_id'],
+                    departure_date=route_data_to_save['departure_date'],
+                    end_date=route_data_to_save['end_date'],
                     total_price=route_data_to_save['total_price'],
                     total_duration=route_data_to_save['total_duration']
                 )
@@ -76,12 +91,16 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                 route_data_to_save = {
                     'departure_airport_id': departure_airport_id,
                     'arrival_airport_id': end_airport_id,
+                    'departure_date': departure_date,
+                    'end_date': end_date,
                     'total_price': flight['price'],
                     'total_duration': flight['total_duration']
                 }
                 new_route = RouteData(
                     departure_airport_id=route_data_to_save['departure_airport_id'],
                     arrival_airport_id=route_data_to_save['arrival_airport_id'],
+                    departure_date=route_data_to_save['departure_date'],
+                    end_date=route_data_to_save['end_date'],
                     total_price=route_data_to_save['total_price'],
                     total_duration=route_data_to_save['total_duration']
                 )
