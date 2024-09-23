@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Detail</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        body {
+            background-image: url('https://static.vecteezy.com/system/resources/previews/042/197/321/non_2x/ai-generated-sky-with-airplane-background-free-photo.jpg');
+            background-size: cover;
+            background-position: top;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+        }
+        .container {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 50px;
+        }
+        h1 {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .list-group-item {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Flight Detail</h1>
+        <div class="card">
+            <div class="card-body" style="color: black; font-size: larger;">
+                <h2 class="card-title">Route ID: {{ flight.id }}</h5>
+                <p class="card-text">Departure: {{ flight.departure_airport_id }} - Arrival: {{ flight.arrival_airport_id }}</p>
+                <p class="card-text">Departure Date: {{ flight.departure_date }} - Arrival Date: {{ flight.end_date }}</p>
+                <p class="card-text">Total Price: {{ flight.total_price }} - Total Duration: {{ flight.total_duration }}</p>
+                <h5>Flights:</h5>
+                <ul class="list-group">
+                    {% for inner_flight in flight.flights %}
+                        <li class="list-group-item">
+                            <p>Departure: {{ inner_flight.departure_airport }} - Arrival: {{ inner_flight.arrival_airport }}</p>
+                            <p>Departure Time: {{ inner_flight.departure_time }} - Arrival Time: {{ inner_flight.arrival_time }}</p>
+                            <img src="{{ inner_flight.airline_logo }}" alt="Airline Logo">
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <h2 class="mt-5">Other Flights on the Same Route</h2>
+        <ul class="list-group">
+            {% for other_flight in all_other_flights %}
+                <li class="list-group-item" style="color: black; position: relative; cursor: pointer;" onclick="window.location.href='/flight/{{ other_flight.id }}'">
+                    <h5>Route ID: {{ other_flight.id }}</h5>
+                    <p>Departure: {{ other_flight.departure_airport_id }} - Arrival: {{ other_flight.arrival_airport_id }}</p>
+                    <p>Departure Date: {{ other_flight.departure_date }} - Arrival Date: {{ other_flight.end_date }}</p>
+                    <p>Total Price: {{ other_flight.total_price }} - Total Duration: {{ other_flight.total_duration }}</p>
+                    <a href="/flight/{{ other_flight.id }}" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 24px;">
+                        &rarr;
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

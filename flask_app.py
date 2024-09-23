@@ -1,49 +1,52 @@
 from flask import request, jsonify, render_template
 
-from data_retriever import FlightData
-from models import db, app, Airports
-
-
-# Create a new flight
-@app.route('/flights', methods=['POST'])
-def create_flight():
-    data = request.get_json()
-    new_flight = FlightData(
-        departure_airport=data['departure_airport'],
-        arrival_airport=data['arrival_airport'],
-        departure_time=data['departure_time'],
-        arrival_time=data['arrival_time'],
-        price=data['price']
-    )
-    db.session.add(new_flight)
-    db.session.commit()
-    return jsonify({'message': 'Flight created successfully'}), 201
+from models import db, app, Airports, FlightData, RouteData
+from data_retriever import retrieve_flight_data
 
 # Retrieve all flights
-@app.route('/flights', methods=['GET'])
-def get_flights():
-    flights = FlightData.query.all()
-    return render_template('flights.html', flights=flights)
+@app.route('/', methods=['GET'])
+def index():
+    airports = Airports.query.all()
+    airports_list = [{'id': airport.id, 'name': airport.name} for airport in airports]
+    return render_template('index.html', flights=None, airports=airports_list, data_chosen={})
 
 # Retrieve a single flight by ID
-@app.route('/flights/<int:id>', methods=['GET'])
+@app.route('/flight/<int:id>', methods=['GET'])
 def get_flight(id):
-    flight = FlightData.query.get_or_404(id)
-    return render_template('flight.html', flight=flight)
+    flight = RouteData.query.get_or_404(id)
+    all_other_flights = RouteData.query.filter(
+        RouteData.departure_airport_id == flight.departure_airport_id,
+        RouteData.arrival_airport_id == flight.arrival_airport_id,
+    ).all()
+    return render_template('detail.html', flight=flight, all_other_flights=all_other_flights)
+
 
 # Search for flights by departure and arrival airports
 @app.route('/flights/search', methods=['GET'])
 def search_flights():
-    departure_airport = request.args.get('departure_airport')
-    arrival_airport = request.args.get('arrival_airport')
-    departure_airport = Airports.query.filter_by(key=departure_airport).first()
-    arrival_airport = Airports.query.filter_by(key=arrival_airport).first()
-    flights = FlightData.query.filter_by(departure_airport_id=departure_airport.id, arrival_airport_id=arrival_airport.id).all()
-    return jsonify({
-        'departure_airport': departure_airport.serialize(),
-        'arrival_airport': arrival_airport.serialize(),
-        'flights': [flight.serialize() for flight in flights]
-    })
+    # temp
+    departure_airport_id = request.args.get('departure_airport')
+    print(departure_airport_id)
+    departure_airport = db.session.query(Airports.key).filter_by(id=departure_airport_id).first()[0]
+    arrival_airport_id = request.args.get('arrival_airport')
+    print(arrival_airport_id)
+    arrival_airport = db.session.query(Airports.key).filter_by(id=arrival_airport_id).first()[0]
+    departure_date = request.args.get('departure_date')
+    arrival_date = request.args.get('arrival_date')
+    data_chosen = {
+        'departure_airport': departure_airport_id,
+        'arrival_airport': arrival_airport_id,
+        'departure_date': departure_date,
+        'arrival_date': arrival_date
+    }
+    try:
+        flights = retrieve_flight_data(departure_airport, arrival_airport, departure_date, arrival_date)
+    except Exception as e:
+        print(e)
+        flights = []
+    airports = Airports.query.all()
+    airports_list = [{'id': airport.id, 'name': airport.name} for airport in airports]
+    return render_template('index.html', flights=flights, airports=airports_list, data_chosen=data_chosen)
 
 if __name__ == '__main__':
     app.run(debug=True)
