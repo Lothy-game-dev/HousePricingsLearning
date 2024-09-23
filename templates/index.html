@@ -3,35 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Airport Index</title>
+    <title>Flight Search</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
     <style>
         body {
-            background-image: url('https://static.vecteezy.com/system/resources/previews/042/197/321/non_2x/ai-generated-sky-with-airplane-background-free-photo.jpg');
-            background-size: cover;
-            background-position: top;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
-            color: #fff;
-            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            font-family: 'Roboto', sans-serif;
+            color: #333;
         }
         .container {
-            background: rgba(0, 0, 0, 0.8);
-            padding: 30px;
-            border-radius: 15px;
+            background: #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            border-radius: 10px;
             margin-top: 50px;
         }
         h1 {
-            font-size: 3rem;
+            font-size: 2rem;
             text-align: center;
             margin-bottom: 30px;
         }
         .form-group label {
-            font-weight: bold;
+            font-weight: 500;
         }
         .btn-primary {
-            background-color: #28a745;
-            border-color: #28a745;
+            background-color: #007bff;
+            border-color: #007bff;
+            font-weight: 500;
         }
         .form-row {
             display: flex;
@@ -40,25 +39,115 @@
         }
         .form-group {
             flex: 1;
-            min-width: 200px;
-            margin-right: 10px;
+            min-width: 250px;
+            margin-right: 15px;
         }
         .form-group:last-child {
             margin-right: 0;
         }
-        .list-group-item {
-            background-color: rgba(255, 255, 255, 0.9);
-            border: 1px solid #ddd;
-            margin-bottom: 10px;
+        select, input[type="date"] {
             border-radius: 5px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            font-size: 1rem;
+            background: #fff;
+            transition: all 0.3s;
         }
-        .logo {
-            display: block;
-            margin: 0 auto 20px;
-            width: 100px;
+        select:focus, input[type="date"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        .list-group-item {
+            background-color: #fff;
+            border: none;
+            border-bottom: 1px solid #eaeaea;
+            margin-bottom: 10px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s;
+        }
+        .list-group-item:hover {
+            background-color: #f8f8f8;
+            cursor: pointer;
+        }
+        .flight-info {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+        .flight-info h5 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+        .flight-info p {
+            font-size: 0.9rem;
+            margin: 2px 0;
+        }
+        .airline-logo {
+            width: 50px; /* Adjust the size of the logo */
+            height: auto;
+            margin-left: 20px; /* Add some space between the text and the logo */
+        }
+        .flight-card:hover {
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        .icon {
+            margin-right: 10px;
+        }
+        .flight-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fff; /* Assuming white background */
         }
     </style>
     <script>
+        // Validate departure date (must be >= today)
+        function validateDepartureDate() {
+            const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+            const departureDate = document.getElementById("departure_date").value;
+
+            if (departureDate < today) {
+                alert("Departure date must be today or later.");
+                document.getElementById("departure_date").value = today; // Reset to today's date
+            }
+        }
+
+        // Validate arrival date (must be >= departure date)
+        function validateArrivalDate() {
+            const departureDate = document.getElementById("departure_date").value;
+            const arrivalDate = document.getElementById("arrival_date").value;
+
+            if (arrivalDate <= departureDate) {
+                alert("Arrival date must be the same as or later than the departure date.");
+                document.getElementById("arrival_date").value = departureDate; // Reset to departure date
+            }
+        }
+
+        // Prevent form submission if dates are invalid
+        function validateForm() {
+            const departureDate = document.getElementById("departure_date").value;
+            const arrivalDate = document.getElementById("arrival_date").value;
+            const today = new Date().toISOString().split('T')[0];
+
+            if (departureDate < today) {
+                alert("Departure date must be today or later.");
+                return false;
+            }
+            if (arrivalDate < departureDate) {
+                alert("Arrival date must be the same as or later than the departure date.");
+                return false;
+            }
+            return true; // Allow form submission if validation passes
+        }
+        
         function validateForm() {
             var departure = document.getElementById("departure_airport").value;
             var arrival = document.getElementById("arrival_airport").value;
@@ -104,39 +193,42 @@
                 </div>
                 <div class="form-group">
                     <label for="departure_date">Departure Date</label>
-                    <input type="date" class="form-control" id="departure_date" name="departure_date" value="{{ data_chosen.departure_date }}" required>
+                    <input type="date" class="form-control" id="departure_date" name="departure_date" value="{{ data_chosen.departure_date }}" required onchange="validateDepartureDate()">
                 </div>
                 <div class="form-group">
                     <label for="arrival_date">Arrival Date</label>
-                    <input type="date" class="form-control" id="arrival_date" name="arrival_date" value="{{ data_chosen.arrival_date }}" required>
+                    <input type="date" class="form-control" id="arrival_date" name="arrival_date" value="{{ data_chosen.arrival_date }}" required onchange="validateArrivalDate()">
                 </div>
             </div>
             <button type="submit" class="btn btn-primary btn-block">Search</button>
         </form>
     </div>
+
     {% if flights is not none %}
     <div class="container mt-5" id="results-container">
         <h2>Flight Results</h2>
         <div id="results">
             <ul class="list-group">
                 {% for flight in flights %}
-                    <li class="list-group-item" style="color: black; position: relative; cursor: pointer;" onclick="window.location.href='/flight/{{ flight.id }}'">
-                        <h5>Route ID: {{ flight.id }}</h5>
-                        <p>Departure: {{ flight.departure_airport_id }} - Arrival: {{ flight.arrival_airport_id }}</p>
-                        <p>Departure Date: {{ flight.departure_date }} - Arrival Date: {{ flight.end_date }}</p>
-                        <p>Total Price: {{ flight.total_price }} - Total Duration: {{ flight.total_duration }}</p>
-                        <ul>
-                            {% for inner_flight in flight.flights %}
-                                <li>
-                                    <p>Departure: {{ inner_flight.departure_airport }} - Arrival: {{ inner_flight.arrival_airport }}</p>
-                                    <p>Departure Time: {{ inner_flight.departure_time }} - Arrival Time: {{ inner_flight.arrival_time }}</p>
-                                    <img src="{{ inner_flight.airline_logo }}" alt="Airline Logo">
+                    <li class="list-group-item flight-card" onclick="window.location.href='/flight/{{ flight.id }}'">
+                        <div class="flight-info">
+                            <h5>Flight ID: {{ flight.id }}</h5>
+                            <p><span class="icon">✈️</span>Departure: {{ flight.departure_airport_id }} → Arrival: {{ flight.arrival_airport_id }}</p>
+                            <p><span class="icon">📅</span>Departure: {{ flight.departure_date }} → Return: {{ flight.end_date }}</p>
+                            <p><span class="icon">💵</span>Price: ${{ flight.total_price }} - Duration: {{ flight.total_duration }} hours</p>
+                            <ul>
+                                {% for inner_flight in flight.flights %}
+                                <li class="flight-item">
+                                    <div class="flight-info">
+                                        <p><span class="icon">📍</span>Leg: {{ inner_flight.departure_airport }} → {{ inner_flight.arrival_airport }}</p>
+                                        <p><span class="icon">⏰</span>Departure: {{ inner_flight.departure_time }} → Arrival: {{ inner_flight.arrival_time }}</p>
+                                    </div>
+                                    <img src="{{ inner_flight.airline_logo }}" alt="Airline Logo" class="airline-logo">
                                 </li>
-                            {% endfor %}
-                        </ul>
-                        <a href="/flight/{{ flight.id }}" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 24px;">
-                            &rarr;
-                        </a>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <span>&rarr;</span>
                     </li>
                 {% endfor %}
             </ul>
