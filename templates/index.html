@@ -52,6 +52,11 @@
             margin-bottom: 10px;
             border-radius: 5px;
         }
+        .logo {
+            display: block;
+            margin: 0 auto 20px;
+            width: 100px;
+        }
     </style>
     <script>
         function validateForm() {
@@ -63,6 +68,17 @@
             }
             return true;
         }
+
+        function setSelectedOptions() {
+            // this work, ignore the errors
+            var dataChosen = {{ data_chosen|tojson }};
+            document.getElementById("departure_airport").value = dataChosen.departure_airport;
+            document.getElementById("arrival_airport").value = dataChosen.arrival_airport;
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            setSelectedOptions();
+        });
     </script>
 </head>
 <body>
@@ -74,7 +90,7 @@
                     <label for="departure_airport">Departure Airport</label>
                     <select class="form-control" id="departure_airport" name="departure_airport">
                         {% for airport in airports %}
-                            <option value="{{ airport.id }}" {% if data_chosen.departure_airport == airport.id %}selected{% endif %}>{{ airport.name }}</option>
+                            <option value="{{ airport.id }}">{{ airport.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -82,7 +98,7 @@
                     <label for="arrival_airport">Arrival Airport</label>
                     <select class="form-control" id="arrival_airport" name="arrival_airport">
                         {% for airport in airports %}
-                            <option value="{{ airport.id }}" {% if data_chosen.arrival_airport == airport.id %}selected{% endif %}>{{ airport.name }}</option>
+                            <option value="{{ airport.id }}">{{ airport.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
