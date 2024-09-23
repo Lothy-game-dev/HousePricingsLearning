@@ -7,6 +7,7 @@ from models import Airports, db, app, FlightData, RouteData
 
 
 def retrieve_flight_data(departure_airport, end_airport, departure_date, end_date):
+    # Check if there are existing routes in the database for the given parameters
     existing_routes = RouteData.query.filter_by(
         departure_airport_id=db.session.query(Airports.id).filter_by(key=departure_airport).first()[0],
         arrival_airport_id=db.session.query(Airports.id).filter_by(key=end_airport).first()[0],
@@ -14,12 +15,15 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
         end_date=end_date,
     ).all()
 
+    # If existing routes are found, return them
     if existing_routes:
         print(f'{len(existing_routes)} existing routes found')
         return [route.serialize() for route in existing_routes]
 
+    # If no existing routes are found, fetch new data from the API
     url = 'https://serpapi.com/search'
 
+    # Set up the parameters for the API request
     params = {
         'engine': 'google_flights',
         'departure_id': departure_airport,
@@ -29,20 +33,26 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
         'api_key': os.getenv("SERAPI_KEY"),
     }
 
+    # Set up the headers for the API request
     headers = {
         'Authorization': f'Bearer {os.getenv("SERAPI_KEY")}'
     }
 
+    # Make the API request
     response = requests.get(url, params=params, headers=headers)
 
+    # If the request is successful, process the response data
     if response.status_code == 200:
+        # Get the airport IDs from the database
         departure_airport_id = db.session.query(Airports.id).filter_by(key=departure_airport).first()[0]
         end_airport_id = db.session.query(Airports.id).filter_by(key=end_airport).first()[0]
 
+        # Parse the response JSON
         flight_data = response.json()
+        flight_return_data = []
         if flight_data.get('best_flights'):
 
-            # best flights
+            # Process the best flights
             for flight in flight_data.get('best_flights', []):
                 flight_inner_data = flight['flights']
                 route_data_to_save = {
@@ -53,6 +63,7 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                     'total_price': flight['price'],
                     'total_duration': flight['total_duration']
                 }
+                # Save the route data to the database
                 new_route = RouteData(
                     departure_airport_id=route_data_to_save['departure_airport_id'],
                     arrival_airport_id=route_data_to_save['arrival_airport_id'],
@@ -84,8 +95,9 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                     db.session.add(new_flight)
                     db.session.commit()
                     print('Add best flight data to database success')
+                    flight_return_data.append(new_flight.serialize())
 
-            # other flights
+            # Process the other flights
             for flight in flight_data.get('other_flights', []):
                 flight_inner_data = flight['flights']
                 route_data_to_save = {
@@ -96,6 +108,7 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                     'total_price': flight['price'],
                     'total_duration': flight['total_duration']
                 }
+                # Save the route data to the database
                 new_route = RouteData(
                     departure_airport_id=route_data_to_save['departure_airport_id'],
                     arrival_airport_id=route_data_to_save['arrival_airport_id'],
@@ -127,7 +140,8 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                     db.session.add(new_flight)
                     db.session.commit()
                     print('Add other flight data to database success')
-            return flight_data
+                    flight_return_data.append(new_flight.serialize())
+            return flight_return_data
         else:
             print('No flight data found')
             return None
@@ -136,13 +150,16 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
         return None
 
 def save_airports_to_db_aviation():
+    # Check if the aviation data has already been saved
     aviation_data_saved = os.getenv('AVIATION_DATA_SAVED')
     aviation_api_key = os.getenv('AVIATION_API_KEY')
 
     if aviation_data_saved.lower() == 'false':
+        # Fetch the aviation data from the API
         url = f'http://api.aviationstack.com/v1/airlines?access_key={aviation_api_key}&limit=10000'
         response = requests.get(url)
 
+        # If the request is successful, save the data to the database
         if response.status_code == 200:
             airlines_data = response.json().get('data', [])
             for airline in airlines_data:
@@ -152,6 +169,7 @@ def save_airports_to_db_aviation():
                     airport = Airports(key=airline_key, name=airline_name)
                     db.session.add(airport)
             db.session.commit()
+            # Update the .env file to indicate that the data has been saved
             dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
             set_key(dotenv_path, 'AVIATION_DATA_SAVED', 'true')
             print("Airports data saved to the database.")
