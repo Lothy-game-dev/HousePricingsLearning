@@ -77,6 +77,18 @@
             font-size: 24px;
             color: #007bff;
         }
+        .cheaper {
+            color: green;
+        }
+        .more-expensive {
+            color: red;
+        }
+        .shorter {
+            color: green;
+        }
+        .longer {
+            color: red;
+        }
     </style>
 </head>
 <body>
@@ -85,7 +97,7 @@
         <div class="card">
             <div class="card-body">
                 <h2 class="card-title">Route ID: {{ flight.id }}</h2>
-                <p class="card-text"><span class="icon">✈️</span>Departure: {{ flight.departure_airport_id }} → Arrival: {{ flight.arrival_airport_id }}</p>
+                <p class="card-text"><span class="icon">✈️</span>Departure: {{ flight.departure_airport_name }} → Arrival: {{ flight.arrival_airport_name }}</p>
                 <p class="card-text"><span class="icon">📅</span>Departure Date: {{ flight.departure_date }} → Arrival Date: {{ flight.end_date }}</p>
                 <p class="card-text"><span class="icon">💵</span>Total Price: ${{ flight.total_price }} - Total Duration: {{ flight.total_duration }} hours</p>
                 <h5 class="mt-4">Flight Segments:</h5>
@@ -93,7 +105,7 @@
                     {% for inner_flight in flight.flights %}
                         <li class="list-group-item">
                             <div class="flight-info">
-                                <p><span class="icon">📍</span>Departure: {{ inner_flight.departure_airport }} → Arrival: {{ inner_flight.arrival_airport }}</p>
+                                <p><span class="icon">📍</span>Departure: {{ inner_flight.departure_airport_name }} → Arrival: {{ inner_flight.arrival_airport_name }}</p>
                                 <p><span class="icon">⏰</span>Departure Time: {{ inner_flight.departure_time }} → Arrival Time: {{ inner_flight.arrival_time }}</p>
                             </div>
                             <img src="{{ inner_flight.airline_logo }}" alt="Airline Logo" class="airline-logo">
@@ -111,7 +123,23 @@
                         <h5>Route ID: {{ other_flight.id }}</h5>
                         <p><span class="icon">✈️</span>Departure: {{ other_flight.departure_airport_id }} → Arrival: {{ other_flight.arrival_airport_id }}</p>
                         <p><span class="icon">📅</span>Departure Date: {{ other_flight.departure_date }} → Arrival Date: {{ other_flight.end_date }}</p>
-                        <p><span class="icon">💵</span>Total Price: ${{ other_flight.total_price }} - Total Duration: {{ other_flight.total_duration }} hours</p>
+                        <p><span class="icon">💵</span>Total Price: ${{ other_flight.total_price }} 
+                            {% if other_flight.total_price < flight.total_price %}
+                                <span class="cheaper">(Cheaper by ${{ flight.total_price - other_flight.total_price }})</span>
+                            {% elif other_flight.total_price > flight.total_price %}
+                                <span class="more-expensive">(More Expensive by ${{ other_flight.total_price - flight.total_price }})</span>
+                            {% else %}
+                                (Same Price)
+                            {% endif %}
+                            - Total Duration: {{ other_flight.total_duration }} hours 
+                            {% if other_flight.total_duration < flight.total_duration %}
+                                <span class="shorter">(Shorter by {{ flight.total_duration - other_flight.total_duration }} hours)</span>
+                            {% elif other_flight.total_duration > flight.total_duration %}
+                                <span class="longer">(Longer by {{ other_flight.total_duration - flight.total_duration }} hours)</span>
+                            {% else %}
+                                (Same Duration)
+                            {% endif %}
+                        </p>
                     </div>
                     <span class="arrow">&rarr;</span>
                 </li>

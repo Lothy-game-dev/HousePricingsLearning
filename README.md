@@ -14,18 +14,16 @@ pip install -r requirement.txt
     + Search: Linh
     + Compare options: Linh
 - UI Front End:
-    + List page (+ search): Long
-    + Detail page: Long
+    + List page (+ search): Long, Linh, Huy
+    + Detail page: Long, Linh, Huy
 - PowerPoint reports:
     + Introduction: Long
-    + Scope: Long
-    + Assignment management plan:
-    + Technology:
+    + Scope: Long, Huy
+    + Workflow: Phú
+    + Technology: Phú
     + API: Huy
-    + Product:
-    + Demo product: 
-    + Conclusion:
-- Reporters:
+    + Product: Phú
+- Reporters: Phú, Linh
 
 # Powerpoint report:
 URL: https://docs.google.com/presentation/d/1xEjVgKdxs9JWmNdzEtORnodRCYbiF7EBlV0BompwTB8/edit?usp=sharing
