@@ -14,12 +14,20 @@ pip install -r requirement.txt
     + Search: Linh
     + Compare options: Linh
 - UI Front End:
-    + List page (+ search):
-    + Detail page:
+    + List page (+ search): Long
+    + Detail page: Long
 - PowerPoint reports:
-    + Text:Phú
-    + Images:Phú
+    + Introduction: Long
+    + Scope: Long
+    + Timeline:
+    + Technology: 
+    + API: Huy
+    + Results:
+    + Conclusion:
 - Reporters:
+
+# Powerpoint report:
+URL: https://docs.google.com/presentation/d/1xEjVgKdxs9JWmNdzEtORnodRCYbiF7EBlV0BompwTB8/edit?usp=sharing
 
 # Errors:
 - [NoneType] object: Vào .env, đổi biến AVIATION_DATA_SAVED='false', và run python data_retriever.py
