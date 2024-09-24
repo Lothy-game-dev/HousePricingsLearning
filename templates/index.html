@@ -164,6 +164,7 @@
         function setSelectedOptions() {
             // this work, ignore the errors
             var dataChosen = {{ data_chosen|tojson }};
+            console.log({{flights|tojson}})
             document.getElementById("departure_airport").value = dataChosen.departure_airport;
             document.getElementById("arrival_airport").value = dataChosen.arrival_airport;
         }
@@ -216,14 +217,14 @@
                     <li class="list-group-item flight-card" onclick="window.location.href='/flight/{{ flight.id }}'">
                         <div class="flight-info">
                             <h5>Flight ID: {{ flight.id }}</h5>
-                            <p><span class="icon">✈️</span>Departure: {{ flight.departure_airport_id }} → Arrival: {{ flight.arrival_airport_id }}</p>
+                            <p><span class="icon">✈️</span>Departure: {{ flight.departure_airport_name }} → Arrival: {{ flight.arrival_airport_name }}</p>
                             <p><span class="icon">📅</span>Departure: {{ flight.departure_date }} → Return: {{ flight.end_date }}</p>
-                            <p><span class="icon">💵</span>Price: ${{ flight.total_price }} - Duration: {{ flight.total_duration }} hours</p>
+                            <p><span class="icon">💵</span>Price: ${{ flight.total_price }} - Duration: {{ flight.total_duration }} minutes</p>
                             <ul>
                                 {% for inner_flight in flight.flights %}
                                 <li class="flight-item">
                                     <div class="flight-info">
-                                        <p><span class="icon">📍</span>Leg: {{ inner_flight.departure_airport }} → {{ inner_flight.arrival_airport }}</p>
+                                        <p><span class="icon">📍</span>Leg: {{ inner_flight.departure_airport_name }} → {{ inner_flight.arrival_airport_name }}</p>
                                         <p><span class="icon">⏰</span>Departure: {{ inner_flight.departure_time }} → Arrival: {{ inner_flight.arrival_time }}</p>
                                     </div>
                                     <img src="{{ inner_flight.airline_logo }}" alt="Airline Logo" class="airline-logo">

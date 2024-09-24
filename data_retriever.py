@@ -20,7 +20,34 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
         # If existing routes are found, return them
         if existing_routes:
             print(f'{len(existing_routes)} existing routes found')
-            return [route.serialize() for route in existing_routes]
+            return_data = []
+            for route in existing_routes:
+                route_data_to_save = {
+                    'departure_airport_id': route.departure_airport_id,
+                    'departure_airport_name': db.session.query(Airports.name).filter_by(id=route.departure_airport_id).first()[0],
+                    'arrival_airport_id': route.arrival_airport_id,
+                    'arrival_airport_name': db.session.query(Airports.name).filter_by(id=route.arrival_airport_id).first()[0],
+                    'departure_date': route.departure_date,
+                    'end_date': route.end_date,
+                    'total_price': route.total_price,
+                    'total_duration': route.total_duration,
+                    'flights': [],
+                    'id': route.id,
+                }
+                existing_flights = FlightData.query.filter_by(route_id=route.id).all()
+                for flight in existing_flights:
+                    flight_data_to_save = {
+                        'departure_airport': flight.departure_airport_id,
+                        'departure_airport_name': db.session.query(Airports.name).filter_by(id=flight.departure_airport_id).first()[0],
+                        'arrival_airport': flight.arrival_airport_id,
+                        'arrival_airport_name': db.session.query(Airports.name).filter_by(id=flight.arrival_airport_id).first()[0],
+                        'departure_time': flight.departure_time,
+                        'arrival_time': flight.arrival_time,
+                        'airline_logo': flight.airline_logo,
+                    }
+                    route_data_to_save['flights'].append(flight_data_to_save)
+                return_data.append(route_data_to_save)
+            return return_data
 
         # If no existing routes are found, fetch new data from the API
         url = 'https://serpapi.com/search'
@@ -60,7 +87,9 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                     flight_inner_data = flight['flights']
                     route_data_to_save = {
                         'departure_airport_id': departure_airport_id,
+                        'departure_airport_name': db.session.query(Airports.name).filter_by(id=departure_airport_id).first()[0],
                         'arrival_airport_id': end_airport_id,
+                        'arrival_airport_name': db.session.query(Airports.name).filter_by(id=end_airport_id).first()[0],
                         'departure_date': departure_date,
                         'end_date': end_date,
                         'total_price': flight['price'],
@@ -82,7 +111,9 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                     for flight_inner in flight_inner_data:
                         flight_data_to_save = {
                             'departure_airport': db.session.query(Airports.id).filter_by(key=flight_inner['departure_airport']['id']).first()[0],
+                            'departure_airport_name': flight_inner['departure_airport']['name'],
                             'arrival_airport': db.session.query(Airports.id).filter_by(key=flight_inner['arrival_airport']['id']).first()[0],
+                            'arrival_airport_name': flight_inner['arrival_airport']['name'],
                             'departure_time': flight_inner['departure_airport']['time'],
                             'arrival_time': flight_inner['arrival_airport']['time'],
                             'airline_logo': flight_inner['airline_logo'],
@@ -99,7 +130,7 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                         db.session.add(new_flight)
                         db.session.commit()
                         print('Add best flight data to database success')
-                        route_data_to_save['flights'].append(new_flight.serialize())
+                        route_data_to_save['flights'].append(flight_data_to_save)
                     flight_return_data.append(route_data_to_save)
 
                 # Process the other flights
@@ -107,7 +138,9 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                     flight_inner_data = flight['flights']
                     route_data_to_save = {
                         'departure_airport_id': departure_airport_id,
+                        'departure_airport_name': db.session.query(Airports.name).filter_by(id=departure_airport_id).first()[0],
                         'arrival_airport_id': end_airport_id,
+                        'arrival_airport_name': db.session.query(Airports.name).filter_by(id=end_airport_id).first()[0],
                         'departure_date': departure_date,
                         'end_date': end_date,
                         'total_price': flight['price'],
@@ -129,7 +162,9 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                     for flight_inner in flight_inner_data:
                         flight_data_to_save = {
                             'departure_airport': db.session.query(Airports.id).filter_by(key=flight_inner['departure_airport']['id']).first()[0],
+                            'departure_airport_name': flight_inner['departure_airport']['name'],
                             'arrival_airport': db.session.query(Airports.id).filter_by(key=flight_inner['arrival_airport']['id']).first()[0],
+                            'arrival_airport_name': flight_inner['arrival_airport']['name'],
                             'departure_time': flight_inner['departure_airport']['time'],
                             'arrival_time': flight_inner['arrival_airport']['time'],
                             'airline_logo': flight_inner['airline_logo'],
@@ -146,7 +181,7 @@ def retrieve_flight_data(departure_airport, end_airport, departure_date, end_dat
                         db.session.add(new_flight)
                         db.session.commit()
                         print('Add other flight data to database success')
-                        route_data_to_save['flights'].append(new_flight.serialize())
+                        route_data_to_save['flights'].append(flight_data_to_save)
                     flight_return_data.append(route_data_to_save)
                 return flight_return_data
             else:
