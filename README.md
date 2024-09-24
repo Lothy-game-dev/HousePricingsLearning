@@ -20,7 +20,6 @@ pip install -r requirement.txt
     + Introduction: Long
     + Scope: Long
     + Timeline + Task distribution:
-    + Technology: 
     + API: Huy
     + Results:
     + Conclusion:
