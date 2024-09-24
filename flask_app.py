@@ -1,7 +1,7 @@
 from flask import request, jsonify, render_template
 
 from models import db, app, Airports, FlightData, RouteData
-from data_retriever import retrieve_flight_data
+from data_retriever import retrieve_flight_data, get_route_all_data
 
 # Retrieve all flights
 @app.route('/', methods=['GET'])
@@ -13,11 +13,13 @@ def index():
 # Retrieve a single flight by ID
 @app.route('/flight/<int:id>', methods=['GET'])
 def get_flight(id):
-    flight = RouteData.query.get_or_404(id)
-    all_other_flights = RouteData.query.filter(
-        RouteData.departure_airport_id == flight.departure_airport_id,
-        RouteData.arrival_airport_id == flight.arrival_airport_id,
+    flight = get_route_all_data(id)
+    all_other_flights_ids = RouteData.query.filter(
+        RouteData.departure_airport_id == flight['departure_airport_id'],
+        RouteData.arrival_airport_id == flight['arrival_airport_id'],
     ).all()
+    all_other_flights_ids = [flight_id for flight_id in all_other_flights_ids if flight_id.id != id]
+    all_other_flights = [get_route_all_data(flight.id) for flight in all_other_flights_ids]
     return render_template('detail.html', flight=flight, all_other_flights=all_other_flights)
 
 

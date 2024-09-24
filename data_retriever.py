@@ -5,6 +5,33 @@ from dotenv import set_key
 
 from models import Airports, db, app, FlightData, RouteData
 
+def get_route_all_data(route_id):
+    route = RouteData.query.get_or_404(route_id)
+    route_data_to_save = {
+        'departure_airport_id': route.departure_airport_id,
+        'departure_airport_name': db.session.query(Airports.name).filter_by(id=route.departure_airport_id).first()[0],
+        'arrival_airport_id': route.arrival_airport_id,
+        'arrival_airport_name': db.session.query(Airports.name).filter_by(id=route.arrival_airport_id).first()[0],
+        'departure_date': route.departure_date,
+        'end_date': route.end_date,
+        'total_price': route.total_price,
+        'total_duration': route.total_duration,
+        'flights': [],
+        'id': route.id,
+    }
+    existing_flights = FlightData.query.filter_by(route_id=route.id).all()
+    for flight in existing_flights:
+        flight_data_to_save = {
+            'departure_airport_id': flight.departure_airport_id,
+            'departure_airport_name': db.session.query(Airports.name).filter_by(id=flight.departure_airport_id).first()[0],
+            'arrival_airport_id': flight.arrival_airport_id,
+            'arrival_airport_name': db.session.query(Airports.name).filter_by(id=flight.arrival_airport_id).first()[0],
+            'departure_time': flight.departure_time,
+            'arrival_time': flight.arrival_time,
+            'airline_logo': flight.airline_logo,
+        }
+        route_data_to_save['flights'].append(flight_data_to_save)
+    return route_data_to_save
 
 def retrieve_flight_data(departure_airport, end_airport, departure_date, end_date):
     try:
