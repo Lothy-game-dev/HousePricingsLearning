@@ -121,7 +121,7 @@
                 <li class="list-group-item" onclick="window.location.href='/flight/{{ other_flight.id }}'">
                     <div class="flight-info">
                         <h5>Route ID: {{ other_flight.id }}</h5>
-                        <p><span class="icon">✈️</span>Departure: {{ other_flight.departure_airport_id }} → Arrival: {{ other_flight.arrival_airport_id }}</p>
+                        <p><span class="icon">✈️</span>Departure: {{ other_flight.departure_airport_name }} → Arrival: {{ other_flight.arrival_airport_name }}</p>
                         <p><span class="icon">📅</span>Departure Date: {{ other_flight.departure_date }} → Arrival Date: {{ other_flight.end_date }}</p>
                         <p><span class="icon">💵</span>Total Price: ${{ other_flight.total_price }} 
                             {% if other_flight.total_price < flight.total_price %}
