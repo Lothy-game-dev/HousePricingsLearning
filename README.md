@@ -19,7 +19,7 @@ pip install -r requirement.txt
 - PowerPoint reports:
     + Introduction: Long
     + Scope: Long
-    + Timeline:
+    + Timeline + Task distribution:
     + Technology: 
     + API: Huy
     + Results:
