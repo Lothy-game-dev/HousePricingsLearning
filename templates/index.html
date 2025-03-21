@@ -3,246 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flight Search</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-    <style>
-        body {
-            background-color: #f5f5f5;
-            font-family: 'Roboto', sans-serif;
-            color: #333;
-        }
-        .container {
-            background: #fff;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            padding: 20px;
-            border-radius: 10px;
-            margin-top: 50px;
-        }
-        h1 {
-            font-size: 2rem;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .form-group label {
-            font-weight: 500;
-        }
-        .btn-primary {
-            background-color: #007bff;
-            border-color: #007bff;
-            font-weight: 500;
-        }
-        .form-row {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-        }
-        .form-group {
-            flex: 1;
-            min-width: 250px;
-            margin-right: 15px;
-        }
-        .form-group:last-child {
-            margin-right: 0;
-        }
-        select, input[type="date"] {
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            padding: 10px;
-            font-size: 1rem;
-            background: #fff;
-            transition: all 0.3s;
-        }
-        select:focus, input[type="date"]:focus {
-            outline: none;
-            border-color: #007bff;
-        }
-        .list-group-item {
-            background-color: #fff;
-            border: none;
-            border-bottom: 1px solid #eaeaea;
-            margin-bottom: 10px;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: all 0.3s;
-        }
-        .list-group-item:hover {
-            background-color: #f8f8f8;
-            cursor: pointer;
-        }
-        .flight-info {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-        }
-        .flight-info h5 {
-            font-size: 1.25rem;
-            font-weight: 500;
-            margin-bottom: 10px;
-        }
-        .flight-info p {
-            font-size: 0.9rem;
-            margin: 2px 0;
-        }
-        .airline-logo {
-            width: 50px; /* Adjust the size of the logo */
-            height: auto;
-            margin-left: 20px; /* Add some space between the text and the logo */
-        }
-        .flight-card:hover {
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
-        .icon {
-            margin-right: 10px;
-        }
-        .flight-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background-color: #fff; /* Assuming white background */
-        }
-        .form-control{
-            min-height: 50px;
-        }
-    </style>
-    <script>
-        // Validate departure date (must be >= today)
-        function validateDepartureDate() {
-            const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
-            const departureDate = document.getElementById("departure_date").value;
-
-            if (departureDate < today) {
-                alert("Departure date must be today or later.");
-                document.getElementById("departure_date").value = today; // Reset to today's date
-            }
-        }
-
-        // Validate arrival date (must be >= departure date)
-        function validateArrivalDate() {
-            const departureDate = document.getElementById("departure_date").value;
-            const arrivalDate = document.getElementById("arrival_date").value;
-
-            if (arrivalDate <= departureDate) {
-                alert("Arrival date must be the same as or later than the departure date.");
-                document.getElementById("arrival_date").value = departureDate; // Reset to departure date
-            }
-        }
-
-        // Prevent form submission if dates are invalid
-        function validateForm() {
-            const departureDate = document.getElementById("departure_date").value;
-            const arrivalDate = document.getElementById("arrival_date").value;
-            const today = new Date().toISOString().split('T')[0];
-
-            if (departureDate < today) {
-                alert("Departure date must be today or later.");
-                return false;
-            }
-            if (arrivalDate < departureDate) {
-                alert("Arrival date must be the same as or later than the departure date.");
-                return false;
-            }
-            return true; // Allow form submission if validation passes
-        }
-        
-        function validateForm() {
-            var departure = document.getElementById("departure_airport").value;
-            var arrival = document.getElementById("arrival_airport").value;
-            if (departure === arrival) {
-                alert("Departure and Arrival airports cannot be the same.");
-                return false;
-            }
-            return true;
-        }
-
-        function setSelectedOptions() {
-            // this work, ignore the errors
-            var dataChosen = {{ data_chosen|tojson }};
-            console.log({{flights|tojson}})
-            document.getElementById("departure_airport").value = dataChosen.departure_airport;
-            document.getElementById("arrival_airport").value = dataChosen.arrival_airport;
-        }
-
-        document.addEventListener("DOMContentLoaded", function() {
-            setSelectedOptions();
-        });
-    </script>
+    <title>Gradient Boosting Training</title>
 </head>
 <body>
-    <div class="container">
-        <h1 class="mt-5">Search Flights</h1>
-        <form action="/flights/search" method="get" class="mt-3" onsubmit="return validateForm()">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="departure_airport">Departure Airport</label>
-                    <select class="form-control" id="departure_airport" name="departure_airport">
-                        {% for airport in airports %}
-                            <option value="{{ airport.id }}">{{ airport.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="arrival_airport">Arrival Airport</label>
-                    <select class="form-control" id="arrival_airport" name="arrival_airport">
-                        {% for airport in airports %}
-                            <option value="{{ airport.id }}">{{ airport.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="departure_date">Departure Date</label>
-                    <input type="date" class="form-control" id="departure_date" name="departure_date" value="{{ data_chosen.departure_date }}" required onchange="validateDepartureDate()">
-                </div>
-                <div class="form-group">
-                    <label for="arrival_date">Arrival Date</label>
-                    <input type="date" class="form-control" id="arrival_date" name="arrival_date" value="{{ data_chosen.arrival_date }}" required onchange="validateArrivalDate()">
-                </div>
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">Search</button>
-        </form>
-    </div>
+    <h2>Gradient Boosting Training</h2>
+    <form method="POST">
+        <label for="n_estimators">Number of Estimators:</label>
+        <input type="number" name="n_estimators" value="200" required><br>
 
-    {% if flights is not none %}
-    <div class="container mt-5" id="results-container">
-        <h2>Flight Results</h2>
-        <div id="results">
-            <ul class="list-group">
-                {% for flight in flights %}
-                    <li class="list-group-item flight-card" onclick="window.location.href='/flight/{{ flight.id }}'">
-                        <div class="flight-info">
-                            <h5>Flight ID: {{ flight.id }}</h5>
-                            <p><span class="icon">✈️</span>Departure: {{ flight.departure_airport_name }} → Arrival: {{ flight.arrival_airport_name }}</p>
-                            <p><span class="icon">📅</span>Departure: {{ flight.departure_date }} → Return: {{ flight.end_date }}</p>
-                            <p><span class="icon">💵</span>Price: ${{ flight.total_price }} - Duration: {{ flight.total_duration }} minutes</p>
-                            <ul>
-                                {% for inner_flight in flight.flights %}
-                                <li class="flight-item">
-                                    <div class="flight-info">
-                                        <p><span class="icon">📍</span>Leg: {{ inner_flight.departure_airport_name }} → {{ inner_flight.arrival_airport_name }}</p>
-                                        <p><span class="icon">⏰</span>Departure: {{ inner_flight.departure_time }} → Arrival: {{ inner_flight.arrival_time }}</p>
-                                    </div>
-                                    <img src="{{ inner_flight.airline_logo }}" alt="Airline Logo" class="airline-logo">
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        <span>&rarr;</span>
-                    </li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
-    {% elif flights == [] %}
-        <div class="container mt-5" id="results-container">
-            <h2>No Flights Found</h2>
-            <p>Sorry, no flights were found for the selected criteria. Please try again with different parameters.</p>
-        </div>
-    {% endif %}
+        <label for="learning_rate">Learning Rate:</label>
+        <input type="number" name="learning_rate" step="0.0001" value="0.1" required><br>
+
+        <label for="max_depth">Max Depth:</label>
+        <input type="number" name="max_depth" value="5" required><br>
+
+        <button type="submit">Train Model</button>
+    </form>
+
+    <h3>Selected Hyperparameters</h3>
+    <p><strong>Number of Estimators:</strong> {{ n_estimators }}</p>
+    <p><strong>Learning Rate:</strong> {{ learning_rate }}</p>
+    <p><strong>Max Depth:</strong> {{ max_depth }}</p>
+
+    <h3>Accuracy Results</h3>
+    <p>{{ accuracy_price }}</p>
+    <p>{{ accuracy_type }}</p>
+
+    <h3>Confusion Matrices</h3>
+    <img src="{{ url_for('static', filename=image_price) }}" alt="Confusion Matrix - Price">
+    <img src="{{ url_for('static', filename=image_type) }}" alt="Confusion Matrix - House Type">
 </body>
 </html>
