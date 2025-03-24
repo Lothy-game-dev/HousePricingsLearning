@@ -9,3 +9,5 @@ scikit-learn
 matplotlib
 seaborn
 joblib
+flask_cors
+dotenv
