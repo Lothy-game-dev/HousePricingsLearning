@@ -1,14 +1,25 @@
 import os
 import joblib
+# For MacOS
+import matplotlib
+matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from dotenv import load_dotenv
 
 # Ensure results directory exists
-RESULTS_DIR = "static/results"
+load_dotenv()
+RESULTS_DIR = os.getenv("RESULTS_DIR")
+LOG_DIR = os.getenv("LOG_DIR")
+LOG_FILE = os.getenv("LOG_FILE")
+MODEL_DIR = os.getenv("MODEL_DIR")
 os.makedirs(RESULTS_DIR, exist_ok=True)
+os.makedirs(LOG_DIR, exist_ok=True)
+os.makedirs(MODEL_DIR, exist_ok=True)
+
 
 def train_gradient_boosting(n_estimators=200, learning_rate=0.1, max_depth=5):
     """
@@ -47,8 +58,8 @@ def train_gradient_boosting(n_estimators=200, learning_rate=0.1, max_depth=5):
     print(f"✅ Gradient Boosting Accuracy (House Type): {accuracy_type}")
 
     # Save models
-    price_model_path = os.path.join(RESULTS_DIR, "gradient_boosting_price.pkl")
-    type_model_path = os.path.join(RESULTS_DIR, "gradient_boosting_type.pkl")
+    price_model_path = os.path.join(MODEL_DIR, "gradient_boosting_price.pkl")
+    type_model_path = os.path.join(MODEL_DIR, "gradient_boosting_type.pkl")
     joblib.dump(gb_model_price, price_model_path)
     joblib.dump(gb_model_type, type_model_path)
 
@@ -86,7 +97,7 @@ def train_gradient_boosting(n_estimators=200, learning_rate=0.1, max_depth=5):
     print("\n✅ Models and Confusion Matrices saved.")
 
     # Save training results in a text file
-    log_file_path = os.path.join(RESULTS_DIR, f"training_log.txt")
+    log_file_path = os.path.join(LOG_DIR, LOG_FILE)
     with open(log_file_path, "a") as log_file:  # Append new training logs
         log_file.write(f"Timestamp: {timestamp};")
         log_file.write(f"Model: Gradient Boosting;")

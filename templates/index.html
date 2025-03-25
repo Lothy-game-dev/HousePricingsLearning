@@ -43,7 +43,7 @@
             <a class="nav-link" id="train-tab" data-bs-toggle="tab" href="#train">Model Training</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" id="train-tab" data-bs-toggle="tab" href="#train">Model Prediction</a>
+            <a class="nav-link" id="predict-tab" data-bs-toggle="tab" href="#predict">Model Prediction</a>
         </li>
         <li class="nav-item">
             <a class="nav-link" id="train-tab" data-bs-toggle="tab" href="#train">History</a>
@@ -68,7 +68,6 @@
             <div id="preprocess-result" class="result-box mt-3"></div>
         </div>
 
-        <!-- Model Training Tab -->
         <!-- Model Training Tab -->
         <div class="tab-pane fade show" id="train">
             <h3>Model Training</h3>
@@ -98,6 +97,52 @@
                 </div>
             </div>
         </div>
+
+        <!-- Model Prediction Tab -->
+        <div class="tab-pane fade" id="predict">
+            <h3>Model Prediction</h3>
+            
+            <label>Select Model:</label>
+            <select id="predict-model-selection" class="form-control">
+                <option value="random_forest">Random Forest</option>
+                <option value="logistic_regression">Logistic Regression</option>
+                <option value="gradient_boosting">Gradient Boosting</option>
+            </select>
+            </br>
+            
+            <label class="mt-2">Select Prediction Type:</label>
+            <select id="prediction-type" class="form-control">
+                <option value="price">Price Category</option>
+                <option value="type">House Type</option>
+            </select>
+            </br>
+            
+            <label class="mt-2">Prediction Data Source:</label>
+            <select id="predict-source-selection" class="form-control" onchange="togglePredictSource()">
+                <option value="random">Random Generated Data</option>
+                <option value="file">Input CSV File</option>
+            </select>
+            </br>
+            
+            <!-- Section for Random Generated Data -->
+            <div id="random-data-section">
+                <label class="mt-2">Number of Records:</label>
+                <input type="number" id="predict-n" class="form-control" value="10" min="1">
+                </br>
+                <button class="btn btn-primary" onclick="predictModel()">Predict</button>
+                <button id="download-generated-data" class="btn btn-primary hidden" onclick="downloadDataGenerated()">Download Generated Data As CSV</button>
+            </div>
+            
+            <!-- Section for CSV File Input (initially hidden) -->
+            <div id="file-data-section" style="display: none;">
+                <label class="mt-2">Upload CSV File:</label>
+                <input type="file" id="predict-file" class="form-control">
+                </br>
+                <button class="btn btn-primary" onclick="predictModelFromCSV()">Predict from CSV</button>
+            </div>
+            
+            <div id="predict-result" class="mt-3"></div>
+        </div>        
     </div>
 </div>
 
@@ -285,6 +330,8 @@ function updateHyperparameterFields() {
 // Train model based on selection
 function trainModel() {
     let model = document.getElementById("model-selection").value;
+    let trainResult = document.getElementById("train-result");
+    trainResult.innerHTML = "Training in progress...";
     let hyperparams = {};
 
     document.querySelectorAll("#hyperparam-form input, #hyperparam-form select").forEach(input => {
@@ -317,8 +364,8 @@ function trainModel() {
         if (data.success) {
             resultBox.innerHTML = `
                 <strong>✅ Training Completed</strong><br>
-                <strong>Price Accuracy:</strong> ${data.accuracy_price.toFixed(2)}<br>
-                <strong>House Type Accuracy:</strong> ${data.accuracy_type.toFixed(2)}<br>
+                <strong>House Price Accuracy:</strong> ${data.accuracy_price.toFixed(2) * 100}%<br>
+                <strong>House Type Accuracy:</strong> ${data.accuracy_type.toFixed(2) * 100}%<br>
             `;
             document.getElementById("price-cm").src = data.price_cm_path;
             document.getElementById("type-cm").src = data.type_cm_path;
@@ -333,6 +380,8 @@ function trainModel() {
 function startPreprocessing() {
     let priceClasses = document.getElementById("price_classes").value;
     let houseClasses = document.getElementById("house_classes").value;
+    let preprocessResult = document.getElementById("preprocess-result");
+    preprocessResult.innerHTML = "Preprocessing in progress...";
 
     fetch("/preprocess-data", {
         method: "POST",
@@ -348,6 +397,152 @@ function startPreprocessing() {
         document.getElementById("preprocess-result").innerHTML = `<strong>${message}</strong>`;
     })
     .catch(error => console.error("Error:", error));
+}
+
+function predictModel() {
+    let model = document.getElementById("predict-model-selection").value;
+    let predictionType = document.getElementById("prediction-type").value;
+    let downloadButton = document.getElementById("download-generated-data");
+    let n = parseInt(document.getElementById("predict-n").value);
+    let resultBox = document.getElementById("predict-result");
+    
+    resultBox.innerHTML = "Generating data and predicting...";
+
+    fetch("/predict-model", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: model, prediction_type: predictionType, n: n })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Define the columns we expect in each record.
+            const columns = [
+                "price_level",
+                "area",
+                "prefarea",
+                "bedrooms",
+                "bathrooms",
+                "parking",
+                "stories",
+                "airconditioning",
+                "basement",
+                "guestroom",
+                "mainroad",
+                "hotwaterheating"
+            ];
+            
+            // Build table header.
+            let tableHtml = `<table class="table table-bordered"><thead><tr>`;
+            columns.forEach(col => {
+                tableHtml += `<th>${col}</th>`;
+            });
+            tableHtml += `</tr></thead><tbody>`;
+            
+            // Build table rows from predictions (which is an array of objects).
+            data.predictions.forEach(record => {
+                tableHtml += `<tr>`;
+                columns.forEach(col => {
+                    tableHtml += `<td>${record[col]}</td>`;
+                });
+                tableHtml += `</tr>`;
+            });
+            tableHtml += `</tbody></table>`;
+            
+            resultBox.innerHTML = tableHtml;
+            downloadButton.classList.remove("hidden");
+            downloadButton.dataset.filePath = data.csv_file;
+        } else {
+            resultBox.innerHTML = `<strong>Error:</strong> ${data.error}`;
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        resultBox.innerHTML = `<strong>Error:</strong> ${error}`;
+    });
+}
+
+function downloadDataGenerated() {
+    let filePath = document.getElementById("download-generated-data").dataset.filePath;
+    window.open(filePath, '_blank');
+}
+
+function togglePredictSource() {
+    let source = document.getElementById("predict-source-selection").value;
+    if (source === "random") {
+        document.getElementById("random-data-section").style.display = "block";
+        document.getElementById("file-data-section").style.display = "none";
+    } else if (source === "file") {
+        document.getElementById("random-data-section").style.display = "none";
+        document.getElementById("file-data-section").style.display = "block";
+    }
+}
+
+function predictModelFromCSV() {
+    let fileInput = document.getElementById("predict-file");
+    let resultBox = document.getElementById("predict-result");
+
+    if (fileInput.files.length === 0) {
+        resultBox.innerHTML = "<strong>Error:</strong> Please select a CSV file.";
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+    formData.append("model", document.getElementById("predict-model-selection").value);
+    formData.append("prediction_type", document.getElementById("prediction-type").value);
+
+    resultBox.innerHTML = "Uploading file and predicting...";
+
+    fetch("/predict-model-file", {  // Ensure this endpoint is implemented in your Flask backend
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Define the columns we expect in each record.
+            const columns = [
+                "price_level",
+                "area",
+                "prefarea",
+                "bedrooms",
+                "bathrooms",
+                "parking",
+                "stories",
+                "airconditioning",
+                "basement",
+                "guestroom",
+                "mainroad",
+                "hotwaterheating"
+            ];
+            
+            // Build table header.
+            let tableHtml = `<table class="table table-bordered"><thead><tr>`;
+            columns.forEach(col => {
+                tableHtml += `<th>${col}</th>`;
+            });
+            tableHtml += `</tr></thead><tbody>`;
+            
+            // Build table rows from predictions (which is an array of objects).
+            data.predictions.forEach(record => {
+                tableHtml += `<tr>`;
+                columns.forEach(col => {
+                    tableHtml += `<td>${record[col]}</td>`;
+                });
+                tableHtml += `</tr>`;
+            });
+            tableHtml += `</tbody></table>`;
+            
+            resultBox.innerHTML = tableHtml;
+        } else {
+            resultBox.innerHTML = `<strong>Error:</strong> ${data.error}`;
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        resultBox.innerHTML = `<strong>Error:</strong> ${error}`;
+    });
 }
 </script>
 
