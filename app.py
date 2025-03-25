@@ -1,12 +1,12 @@
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
-import joblib
-import threading
-import preprocessing_data as preprocessing
-import random_forest
-import gbc
-import logistic_regression
-import models
+import utils.preprocessing_data as preprocessing
+import learn_models.random_forest as random_forest
+import learn_models.gbc as gbc
+import learn_models.logistic_regression as logistic_regression
+import utils.generate_data as generate_data
+import utils.preprocessing_predict_data as preprocessing_predict_data
+import utils.data_prediction as data_prediction
 import pandas as pd
 from dotenv import load_dotenv, set_key, dotenv_values
 import os
@@ -137,9 +137,6 @@ def preprocess_data():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500  # Handle any errors gracefully
-
 def async_train_model(model_name, model_type, hyperparams):
     global training_results
     training_results[model_type] = models.train_model(model_name, model_type, hyperparams)
@@ -177,10 +174,123 @@ def train_logistic_regression_route():
     hyperparams = data.get("hyperparams", {})
 
     try:
-        result = logistic_regression.train_logistic_regression(max_iter=hyperparams["max_iter"], solver=hyperparams["solver"])
+        result = logistic_regression.train_logistic_regression(max_iter=hyperparams["max_iter"], solver=hyperparams["solver"], C=float(hyperparams["C"]))
         return jsonify(result)  # ✅ Send training results as JSON
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500  # ❌ Return error if something goes wrong
+    
+@app.route("/predict-model", methods=["POST"])
+def predict_model():
+    data = request.get_json()
+    model_name = data.get("model")
+    prediction_type = data.get("prediction_type")
+    n = int(data.get("n", 10))
+    
+    # Generate random CSV data
+    csv_file, returnData = generate_data.generate_random_data_for_prediction(n=n)
+    
+    # Preprocess the generated data (will not split since file_name != 'Housing_Augmented.csv')
+    preprocessed_file = preprocessing_predict_data.preprocess_predict_data(fileName=csv_file, num_house_types=5)
+    
+    predictions = data_prediction.predict_model(model_name, prediction_type, preprocessed_file)
+
+    # Build a list of dictionaries, one per record.
+    finalReturnData = []
+    columns = [
+        "area",
+        "prefarea",
+        "bedrooms",
+        "bathrooms",
+        "parking",
+        "stories",
+        "airconditioning",
+        "basement",
+        "guestroom",
+        "mainroad",
+        "hotwaterheating",
+    ]
+
+    price_categories = ["low", "medium", "high", "very high", "extremely high"]
+    
+    for i in range(n):
+        record = {}
+        for col in columns:
+            # Assumes returnData[col] is indexable (e.g. a list or pandas Series)
+            record[col] = returnData[col][i]
+        record["price_level"] = price_categories[predictions[i]]
+        finalReturnData.append(record)
+
+    # Return a JSON response containing a list of plain dictionaries.
+    return jsonify({"success": True, "predictions": finalReturnData, "csv_file": csv_file})
+
+@app.route("/predict-model-file", methods=["POST"])
+def predict_model_file():
+    # Check if file is provided
+    if "file" not in request.files:
+        return jsonify({"success": False, "error": "No file provided."}), 400
+
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"success": False, "error": "No file selected."}), 400
+
+    # Save the uploaded file securely
+    upload_dir = "uploads"
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, file.filename)
+    file.save(file_path)
+
+    # Retrieve additional parameters from the form
+    model_name = request.form.get("model")
+    prediction_type = request.form.get("prediction_type")
+
+    # Preprocess the uploaded CSV file.
+    # (This file should not contain the "price" column.)
+    preprocessed_file = preprocessing_predict_data.preprocess_predict_data(fileName=file_path, num_house_types=5)
+
+    # Get predictions using the preprocessed data.
+    predictions = data_prediction.predict_model(model_name, prediction_type, preprocessed_file)
+    if predictions is None:
+        return jsonify({"success": False, "error": "Prediction failed."}), 500
+
+    # Load the original CSV to extract the input data values.
+    df_original = pd.read_csv(file_path)
+    # Define the columns you want to include in the final output.
+    columns = [
+        "area",
+        "prefarea",
+        "bedrooms",
+        "bathrooms",
+        "parking",
+        "stories",
+        "airconditioning",
+        "basement",
+        "guestroom",
+        "mainroad",
+        "hotwaterheating",
+    ]
+    finalReturnData = []
+
+    price_categories = ["low", "medium", "high", "very high", "extremely high"]
+
+    # Build a record for each row combining selected feature values with the prediction.
+    for i in range(len(predictions)):
+        record = {}
+        for col in columns:
+            value = df_original[col].iloc[i]
+            # Convert numpy types (e.g. numpy.int64) to Python int/float if necessary.
+            if hasattr(value, "item"):
+                record[col] = value.item()
+            else:
+                record[col] = value
+        # Process the prediction value similarly.
+        pred_val = predictions[i]
+        if hasattr(pred_val, "item"):
+            record["price_level"] = price_categories[pred_val.item()]
+        else:
+            record["price_level"] = price_categories[pred_val]
+        finalReturnData.append(record)
+
+    return jsonify({"success": True, "predictions": finalReturnData})
 
 @app.route("/get-confusion-matrix/<filename>", methods=["GET"])
 def get_confusion_matrix(filename):

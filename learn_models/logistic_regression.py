@@ -1,18 +1,29 @@
 import os
 import joblib
+# For MacOS
+import matplotlib
+matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from dotenv import load_dotenv
 
 # Ensure results directory exists
-RESULTS_DIR = "static/results"
+load_dotenv()
+RESULTS_DIR = os.getenv("RESULTS_DIR")
+LOG_DIR = os.getenv("LOG_DIR")
+LOG_FILE = os.getenv("LOG_FILE")
+MODEL_DIR = os.getenv("MODEL_DIR")
 os.makedirs(RESULTS_DIR, exist_ok=True)
+os.makedirs(LOG_DIR, exist_ok=True)
+os.makedirs(MODEL_DIR, exist_ok=True)
 
-def train_random_forest(n_estimators=200, max_depth=10, min_samples_split=2):
+
+def train_logistic_regression(max_iter=500, solver='lbfgs', C=1.0):
     """
-    Train Random Forest Classifier for Price and House Type Classification,
+    Train Logistic Regression for Price and House Type Classification,
     save confusion matrix images, and return evaluation results.
     """
 
@@ -24,17 +35,17 @@ def train_random_forest(n_estimators=200, max_depth=10, min_samples_split=2):
     else:
         raise ValueError("❌ Preprocessed data format is incorrect. Expected 6 elements but got", len(preprocessed_data))
 
-    # Train Random Forest for Price Classification (Dynamic Classes)
-    rf_model_price = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, min_samples_split=min_samples_split, random_state=42)
-    rf_model_price.fit(X_train, y_train_price)
+    # Train Logistic Regression for Price Classification
+    log_model_price = LogisticRegression(max_iter=max_iter, multi_class='multinomial', solver=solver, C=C)
+    log_model_price.fit(X_train, y_train_price)
 
-    # Train Random Forest for House Type Classification (Dynamic Classes)
-    rf_model_type = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, min_samples_split=min_samples_split, random_state=42)
-    rf_model_type.fit(X_train, y_train_type)
+    # Train Logistic Regression for House Type Classification
+    log_model_type = LogisticRegression(max_iter=max_iter, multi_class='ovr', solver=solver, C=C)
+    log_model_type.fit(X_train, y_train_type)
 
     # Make Predictions
-    y_pred_price = rf_model_price.predict(X_test)
-    y_pred_type = rf_model_type.predict(X_test)
+    y_pred_price = log_model_price.predict(X_test)
+    y_pred_type = log_model_type.predict(X_test)
 
     # Evaluate Models
     accuracy_price = accuracy_score(y_test_price, y_pred_price)
@@ -43,21 +54,19 @@ def train_random_forest(n_estimators=200, max_depth=10, min_samples_split=2):
     classification_report_price = classification_report(y_test_price, y_pred_price)
     classification_report_type = classification_report(y_test_type, y_pred_type)
 
-    print(f"✅ Random Forest Accuracy (Price): {accuracy_price}")
-    print(f"✅ Random Forest Accuracy (House Type): {accuracy_type}")
+    print(f"✅ Logistic Regression Accuracy (Price - {len(set(y_train_price))} Classes): {accuracy_price}")
+    print(f"✅ Logistic Regression Accuracy (House Type - {len(set(y_train_type))} Classes): {accuracy_type}")
 
     # Save models
-    price_model_path = os.path.join(RESULTS_DIR, "random_forest_price.pkl")
-    type_model_path = os.path.join(RESULTS_DIR, "random_forest_type.pkl")
-    joblib.dump(rf_model_price, price_model_path)
-    joblib.dump(rf_model_type, type_model_path)
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    price_model_path = os.path.join(MODEL_DIR, "logistic_regression_price.pkl")
+    type_model_path = os.path.join(MODEL_DIR, "logistic_regression_type.pkl")
+    joblib.dump(log_model_price, price_model_path)
+    joblib.dump(log_model_type, type_model_path)
 
     # Generate Confusion Matrices
     cm_price = confusion_matrix(y_test_price, y_pred_price)
     cm_type = confusion_matrix(y_test_type, y_pred_type)
-
-    # Generate unique timestamp for this training session
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     price_cm_file_name = f"confusion_matrix_price_{timestamp}.png"
     type_cm_file_name = f"confusion_matrix_type_{timestamp}.png"
@@ -70,7 +79,7 @@ def train_random_forest(n_estimators=200, max_depth=10, min_samples_split=2):
     sns.heatmap(cm_price, annot=True, fmt='d', cmap='Blues')
     plt.xlabel("Predicted")
     plt.ylabel("Actual")
-    plt.title(f"Random Forest - Confusion Matrix (Price - {len(set(y_train_price))} Classes)")
+    plt.title(f"Logistic Regression - Confusion Matrix (Price - {len(set(y_train_price))} Classes)")
     plt.savefig(price_cm_path)  # Save image
     plt.close()
 
@@ -79,18 +88,18 @@ def train_random_forest(n_estimators=200, max_depth=10, min_samples_split=2):
     sns.heatmap(cm_type, annot=True, fmt='d', cmap='Greens')
     plt.xlabel("Predicted")
     plt.ylabel("Actual")
-    plt.title(f"Random Forest - Confusion Matrix (House Type - {len(set(y_train_type))} Classes)")
+    plt.title(f"Logistic Regression - Confusion Matrix (House Type - {len(set(y_train_type))} Classes)")
     plt.savefig(type_cm_path)  # Save image
     plt.close()
 
     print("\n✅ Models and Confusion Matrices saved.")
 
     # Save training results in a text file
-    log_file_path = os.path.join(RESULTS_DIR, f"training_log.txt")
+    log_file_path = os.path.join(LOG_DIR, LOG_FILE)
     with open(log_file_path, "a") as log_file:
         log_file.write(f"Timestamp: {timestamp};")
-        log_file.write(f"Model: Random Forest;")
-        log_file.write(f"Hyperparameters: n_estimators={n_estimators},max_depth={max_depth},min_samples_split={min_samples_split};")
+        log_file.write(f"Model: Logistic Regression;")
+        log_file.write(f"Hyperparameters: max_iter={max_iter},solver={solver},C={C};")
         log_file.write(f"Price: {accuracy_price:.4f};")
         log_file.write(f"Type: {accuracy_type:.4f}\n")
 
