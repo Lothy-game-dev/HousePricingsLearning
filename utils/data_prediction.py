@@ -1,25 +1,27 @@
 import os
 import joblib
 import pandas as pd
+import numpy as np
 
 def predict_model(model_name, prediction_type, preprocessed_file):
     """
-    Loads preprocessed data, reindexes it if needed using saved feature columns,
-    loads the specified model, and returns predictions.
+    Loads preprocessed prediction data (normalized using MinMaxScaler),
+    reindexes it using saved feature columns, loads the specified model,
+    fills any missing values with 0, and returns predictions.
     
     Parameters:
       model_name: str - one of "random_forest", "logistic_regression", "gradient_boosting"
       prediction_type: str - target type (e.g., "price" or "type")
-      preprocessed_file: str - path to the pickle file containing the preprocessed prediction data
-
+      preprocessed_file: str - path to the pickle file containing the preprocessed prediction data.
+          Expected to be a tuple where the first element is the normalized feature matrix.
+    
     Returns:
-      List of predictions or None if an error occurs.
+      List of predictions, or None if an error occurs.
     """
-    # Load the preprocessed data.
-    # For prediction data, we assume the preprocessed_file contains just the transformed features.
+    # Load the preprocessed data (assumed to be a tuple: (X_scaled, additional_info))
     data = joblib.load(preprocessed_file)
     
-    # If data is a tuple (e.g., from training splitting), assume the first element is X.
+    # Extract the feature matrix (X_scaled). If data is a tuple, assume the first element is X_scaled.
     if isinstance(data, tuple):
         X_data = data[0]
     else:
@@ -31,6 +33,14 @@ def predict_model(model_name, prediction_type, preprocessed_file):
         if os.path.exists(feature_columns_file):
             feature_columns = joblib.load(feature_columns_file)
             X_data = X_data.reindex(columns=feature_columns)
+            # Fill missing columns (NaN values) with 0
+            X_data = X_data.fillna(0)
+        else:
+            print("Feature columns file not found.")
+    
+    # If X_data is a numpy array, ensure there are no NaNs.
+    if isinstance(X_data, np.ndarray):
+        X_data = np.nan_to_num(X_data, nan=0.0)
     
     # Determine the model file path based on the model name and prediction type.
     MODEL_DIR = os.getenv("MODEL_DIR")

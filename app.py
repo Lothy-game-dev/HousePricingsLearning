@@ -83,6 +83,9 @@ def get_dataset_summary():
                 "contributions": contribution_data
             }
 
+        summary["price_class_count"] = int(os.getenv("PRICE_CLASS_COUNT", 5))
+        summary["type_class_count"] = int(os.getenv("TYPE_CLASS_COUNT", 5))
+
     return summary
 
 @app.route("/")
@@ -128,9 +131,19 @@ def preprocess_data():
         data = request.get_json()
         num_price_classes = int(data.get("price_classes", 5))
         num_house_types = int(data.get("house_classes", 5))
+    
+        dotenv_path = ".env"
+        env_values = dotenv_values(dotenv_path)  # Load existing values
+
+        # Update `.env` file with new values
+        with open(dotenv_path, "w") as env_file:
+            env_values["PRICE_CLASS_COUNT"] = str(num_price_classes)
+            env_values["TYPE_CLASS_COUNT"] = str(num_house_types)
+            for key, value in env_values.items():
+                env_file.write(f"{key}={value}\n")
 
         # Call preprocessing function
-        preprocessing.preprocess_data(num_price_classes, num_house_types)
+        preprocessing.preprocess_data(num_price_classes=num_price_classes, num_house_types=num_house_types)
 
         return jsonify({"success": True})  # ✅ Return success message
 
@@ -190,7 +203,7 @@ def predict_model():
     csv_file, returnData = generate_data.generate_random_data_for_prediction(n=n)
     
     # Preprocess the generated data (will not split since file_name != 'Housing_Augmented.csv')
-    preprocessed_file = preprocessing_predict_data.preprocess_predict_data(fileName=csv_file, num_house_types=5)
+    preprocessed_file = preprocessing_predict_data.preprocess_predict_data(fileName=csv_file)
     
     predictions = data_prediction.predict_model(model_name, prediction_type, preprocessed_file)
 
@@ -208,16 +221,21 @@ def predict_model():
         "guestroom",
         "mainroad",
         "hotwaterheating",
+        "furnishingstatus"
     ]
 
-    price_categories = ["low", "medium", "high", "very high", "extremely high"]
+    if not predictions:
+        return jsonify({"success": False, "error": "Prediction failed."}), 500
     
     for i in range(n):
         record = {}
         for col in columns:
             # Assumes returnData[col] is indexable (e.g. a list or pandas Series)
             record[col] = returnData[col][i]
-        record["price_level"] = price_categories[predictions[i]]
+        if (prediction_type == "price"):
+            record["price_level"] = "Price Level " + str(predictions[i])
+        else:
+            record["type_level"] = "Type Level " + str(predictions[i])
         finalReturnData.append(record)
 
     # Return a JSON response containing a list of plain dictionaries.
@@ -245,7 +263,7 @@ def predict_model_file():
 
     # Preprocess the uploaded CSV file.
     # (This file should not contain the "price" column.)
-    preprocessed_file = preprocessing_predict_data.preprocess_predict_data(fileName=file_path, num_house_types=5)
+    preprocessed_file = preprocessing_predict_data.preprocess_predict_data(fileName=file_path)
 
     # Get predictions using the preprocessed data.
     predictions = data_prediction.predict_model(model_name, prediction_type, preprocessed_file)
@@ -267,10 +285,9 @@ def predict_model_file():
         "guestroom",
         "mainroad",
         "hotwaterheating",
+        "furnishingstatus"
     ]
     finalReturnData = []
-
-    price_categories = ["low", "medium", "high", "very high", "extremely high"]
 
     # Build a record for each row combining selected feature values with the prediction.
     for i in range(len(predictions)):
@@ -285,9 +302,15 @@ def predict_model_file():
         # Process the prediction value similarly.
         pred_val = predictions[i]
         if hasattr(pred_val, "item"):
-            record["price_level"] = price_categories[pred_val.item()]
+            if (prediction_type == "price"):
+                record["price_level"] = "Price Level " + str(pred_val.item())
+            else:
+                record["type_level"] = "Type Level " + str(pred_val)
         else:
-            record["price_level"] = price_categories[pred_val]
+            if (prediction_type == "price"):
+                record["price_level"] = "Price Level " + str(pred_val)
+            else:
+                record["type_level"] = "Type Level " + str(pred_val)
         finalReturnData.append(record)
 
     return jsonify({"success": True, "predictions": finalReturnData})
@@ -301,11 +324,46 @@ def get_confusion_matrix(filename):
     except Exception:
         return jsonify({"success": False, "error": "File not found"}), 404  # ❌ Return error if file is missing
 
+@app.route("/get-training-log", methods=["GET"])
+def get_training_log():
+    log_file_path = os.path.join(os.getenv("LOG_DIR"), os.getenv("LOG_FILE"))
+    if not os.path.exists(log_file_path):
+        return jsonify({"success": False, "error": "Training log file not found"}), 404
 
-@app.route("/get-training-result", methods=["GET"])
-def get_training_result():
-    model_type = request.args.get("type", "price")
-    return jsonify(training_results.get(model_type, {"message": "Training not completed yet"}))
+    with open(log_file_path, "r") as log_file:
+        lines = log_file.readlines()
+
+    logs = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue  # skip empty lines
+        entry = {}
+        parts = line.split(";")
+        for part in parts:
+            if ":" in part:
+                key, val = part.split(":", 1)
+                entry[key.strip()] = val.strip()
+        logs.append(entry)
+
+    return jsonify({"success": True, "logs": logs})
+
+@app.route("/clear_logs", methods=["DELETE"])
+def clear_logs():
+    log_file_path = os.path.join(os.getenv("LOG_DIR"), os.getenv("LOG_FILE"))
+    if os.path.exists(log_file_path):
+        with open(log_file_path, "w") as log_file:
+            log_file.write("")
+    
+    cm_path = os.path.join(os.getenv("RESULTS_DIR"))
+    for file in os.listdir(cm_path):
+        os.remove(os.path.join(cm_path, file))
+
+    model_path = os.path.join(os.getenv("MODELS_DIR"))
+    for file in os.listdir(model_path):
+        os.remove(os.path.join(model_path, file))
+
+    return jsonify({"success": True})
 
 if __name__ == "__main__":
     training_results = {}
