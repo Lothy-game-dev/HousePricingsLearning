@@ -11,3 +11,4 @@ seaborn
 joblib
 flask_cors
 dotenv
+scikit-optimize

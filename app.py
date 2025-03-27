@@ -22,7 +22,7 @@ AVAILABLE_MODELS = {
     "logistic_regression": {
         "C": {"type": "float", "default": 1.0, "description": "Inverse of regularization strength"},
         "max_iter": {"type": "int", "default": 100, "description": "Maximum number of iterations"},
-        "solver": {"type": "str", "default": "lbfgs", "options": ["newton-cg", "lbfgs", "liblinear", "sag", "saga"]}
+        "solver": {"type": "str", "default": "lbfgs", "options": ["newton-cg", "lbfgs", "sag", "saga"]}
     },
     "random_forest": {
         "n_estimators": {"type": "int", "default": 200, "description": "Number of trees in the forest"},
@@ -150,47 +150,65 @@ def preprocess_data():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-def async_train_model(model_name, model_type, hyperparams):
-    global training_results
-    training_results[model_type] = models.train_model(model_name, model_type, hyperparams)
-
-@app.route("/train-random-forest", methods=["POST"])
-def train_random_forest_route():
-    """Train Random Forest and return results (accuracy, confusion matrices, model paths)."""
-    data = request.get_json()
-    hyperparams = data.get("hyperparams", {})
-
-    try:
-        result = random_forest.train_random_forest(n_estimators=hyperparams["n_estimators"],
-        max_depth=hyperparams["max_depth"], min_samples_split=hyperparams["min_samples_split"])
-        return jsonify(result)  # ✅ Send training results as JSON
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500  # ❌ Return error if something goes wrong
+@app.route("/train-model", methods=["POST"])
+def train_model_route():
+    """
+    Combined endpoint for training a model.
     
-@app.route("/train-gradient-boosting", methods=["POST"])
-def train_gradient_boosting_route():
-    """Train Random Forest and return results (accuracy, confusion matrices, model paths)."""
+    Expected JSON payload:
+    {
+        "model": "random_forest" | "gradient_boosting" | "logistic_regression",
+        "hyperparams": { ... },
+        "optimization_method": "grid" | "random" | "bayesian" | "none"
+    }
+    """
     data = request.get_json()
+    model_name = data.get("model")
     hyperparams = data.get("hyperparams", {})
+    opt_method = data.get("optimization_method", "none").lower()
+
+    # Set optimization booleans based on the optimization_method value
+    use_grid_search = (opt_method == "grid")
+    use_random_search = (opt_method == "random")
+    use_bayesian_optimization = (opt_method == "bayesian")
 
     try:
-        result = gbc.train_gradient_boosting(n_estimators=hyperparams["n_estimators"],
-        learning_rate=float(hyperparams["learning_rate"]), max_depth=hyperparams["max_depth"])
-        return jsonify(result)  # ✅ Send training results as JSON
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500  # ❌ Return error if something goes wrong
-    
-@app.route("/train-logistic-regression", methods=["POST"])
-def train_logistic_regression_route():
-    """Train Random Forest and return results (accuracy, confusion matrices, model paths)."""
-    data = request.get_json()
-    hyperparams = data.get("hyperparams", {})
+        if model_name == "random_forest":
+            # Expected hyperparams: n_estimators, max_depth, min_samples_split
+            result = random_forest.train_random_forest(
+                n_estimators = hyperparams["n_estimators"],
+                max_depth = hyperparams["max_depth"],
+                min_samples_split = hyperparams["min_samples_split"],
+                use_grid_search = use_grid_search,
+                use_random_search = use_random_search,
+                use_bayesian_optimization = use_bayesian_optimization
+            )
+        elif model_name == "gradient_boosting":
+            # Expected hyperparams: n_estimators, learning_rate, max_depth
+            result = gbc.train_gradient_boosting(
+                n_estimators = hyperparams["n_estimators"],
+                learning_rate = float(hyperparams["learning_rate"]),
+                max_depth = hyperparams["max_depth"],
+                use_grid_search = use_grid_search,
+                use_random_search = use_random_search,
+                use_bayesian_optimization = use_bayesian_optimization
+            )
+        elif model_name == "logistic_regression":
+            # Expected hyperparams: max_iter, solver, C
+            result = logistic_regression.train_logistic_regression(
+                max_iter = hyperparams["max_iter"],
+                solver = hyperparams["solver"],
+                C = float(hyperparams["C"]),
+                use_grid_search = use_grid_search,
+                use_random_search = use_random_search,
+                use_bayesian_optimization = use_bayesian_optimization
+            )
+        else:
+            return jsonify({"success": False, "error": "Invalid model name provided."}), 400
 
-    try:
-        result = logistic_regression.train_logistic_regression(max_iter=hyperparams["max_iter"], solver=hyperparams["solver"], C=float(hyperparams["C"]))
-        return jsonify(result)  # ✅ Send training results as JSON
+        return jsonify(result)
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500  # ❌ Return error if something goes wrong
+        return jsonify({"success": False, "error": str(e)}), 500
     
 @app.route("/predict-model", methods=["POST"])
 def predict_model():
@@ -359,7 +377,7 @@ def clear_logs():
     for file in os.listdir(cm_path):
         os.remove(os.path.join(cm_path, file))
 
-    model_path = os.path.join(os.getenv("MODELS_DIR"))
+    model_path = os.path.join(os.getenv("MODEL_DIR"))
     for file in os.listdir(model_path):
         os.remove(os.path.join(model_path, file))
 

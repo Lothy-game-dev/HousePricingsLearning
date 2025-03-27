@@ -96,27 +96,53 @@
         <!-- Model Training Tab -->
         <div class="tab-pane fade show" id="train">
             <h3>Model Training</h3>
-
+        
             <label>Select Model:</label>
             <select id="model-selection" class="form-control" onchange="updateHyperparameterFields()">
                 <option value="random_forest">Random Forest</option>
                 <option value="logistic_regression">Logistic Regression</option>
                 <option value="gradient_boosting">Gradient Boosting</option>
             </select>
-
-            <h4 class="mt-3">Hyperparameters</h4>
-            <form id="hyperparam-form"></form>
-
-            <button class="btn btn-warning" onclick="trainModel()">Train Model</button>
+        
+            <h4 class="mt-3">Hyperparameter Tuning Mode</h4>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="tuningMode" id="manualInput" value="manual" checked onchange="toggleTuningMode()">
+                <label class="form-check-label" for="manualInput">Manual Input of Hyperparameters</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="tuningMode" id="optimization" value="optimization" onchange="toggleTuningMode()">
+                <label class="form-check-label" for="optimization">Use Optimization Method</label>
+            </div>
+        
+            <!-- Manual hyperparameter input form -->
+            <div id="manual-hyperparam-div">
+                <h4 class="mt-3">Hyperparameters</h4>
+                <form id="hyperparam-form">
+                    <!-- Your dynamic hyperparameter inputs will be injected here by updateHyperparameterFields() -->
+                </form>
+            </div>
+        
+            <!-- Optimization method select (shown only when "optimization" is selected) -->
+            <div id="optimization-method-div" style="display: none;">
+                <label>Select Optimization Method:</label>
+                <select id="optimization-method" class="form-control">
+                    <option value="none">None</option>
+                    <option value="grid">Grid Search</option>
+                    <option value="random">Random Search</option>
+                    <option value="bayesian">Bayesian Optimization</option>
+                </select>
+            </div>
+        
+            <button class="btn btn-warning mt-3" onclick="trainModel()">Train Model</button>
             <div id="train-result" class="result-box mt-3"></div>
-
+        
             <h4 class="mt-3">Confusion Matrices</h4>
-            <div class="">
-                <div class="">
+            <div>
+                <div>
                     <h5>Price Prediction</h5>
                     <img id="price-cm" src="" alt="Price Confusion Matrix">
                 </div>
-                <div class="">
+                <div>
                     <h5>House Type Prediction</h5>
                     <img id="type-cm" src="" alt="House Type Confusion Matrix">
                 </div>
@@ -159,19 +185,24 @@
             </br>
             
             <label class="mt-2">Prediction Data Source:</label>
-            <select id="predict-source-selection" class="form-control" onchange="togglePredictSource()">
-                <option value="random">Random Generated Data</option>
-                <option value="file">Input CSV File</option>
-            </select>
-            </br>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="predictSource" id="random" value="random" checked onchange="togglePredictSource()">
+                <label class="form-check-label" for="random">Random Generated Data</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="predictSource" id="file" value="file" onchange="togglePredictSource()">
+                <label class="form-check-label" for="file">Input CSV File</label>
+            </div>
             
             <!-- Section for Random Generated Data -->
             <div id="random-data-section">
                 <label class="mt-2">Number of Records:</label>
                 <input type="number" id="predict-n" class="form-control" value="10" min="1">
                 </br>
-                <button class="btn btn-primary" onclick="predictModel()">Predict</button>
-                <button id="download-generated-data" class="btn btn-primary hidden" onclick="downloadDataGenerated()">Download Generated Data As CSV</button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary" onclick="predictModel()">Predict</button>
+                    <button id="download-generated-data" class="btn btn-primary" style="display: none;" onclick="downloadDataGenerated()">Download Generated Data As CSV</button>
+                </div>
             </div>
             
             <!-- Section for CSV File Input (initially hidden) -->
@@ -318,6 +349,17 @@ function loadModelList() {
         });
 }
 
+function toggleTuningMode() {
+    const tuningMode = document.querySelector('input[name="tuningMode"]:checked').value;
+    if (tuningMode === 'manual') {
+        document.getElementById("manual-hyperparam-div").style.display = "block";
+        document.getElementById("optimization-method-div").style.display = "none";
+    } else if (tuningMode === 'optimization') {
+        document.getElementById("manual-hyperparam-div").style.display = "none";
+        document.getElementById("optimization-method-div").style.display = "block";
+    }
+}
+
 function updateEnv() {
     let formData = new FormData(document.getElementById("updateEnvForm"));
     let resultDiv = document.getElementById("saving-env-result");
@@ -381,34 +423,51 @@ function updateHyperparameterFields() {
 
 // Train model based on selection
 function trainModel() {
+    // Get model selection from the dropdown
     let model = document.getElementById("model-selection").value;
+    
+    // Get tuning mode from radio buttons (assumed values: "manual" or "optimization")
+    const tuningMode = document.querySelector('input[name="tuningMode"]:checked').value;
+    
+    // If in optimization mode, get the optimization method from its dropdown
+    let optimizationMethod;
+    if (tuningMode === "optimization") {
+        const optElement = document.getElementById("optimization-method");
+        if (optElement) {
+            optimizationMethod = optElement.value;
+        } else {
+            optimizationMethod = "none";
+        }
+    }
+    
     let trainResult = document.getElementById("train-result");
     trainResult.innerHTML = "Training in progress...";
+    
     let hyperparams = {};
-
+    // Collect hyperparameters from the form inputs/selects
     document.querySelectorAll("#hyperparam-form input, #hyperparam-form select").forEach(input => {
-        let value = input.type === "number" ? parseInt(input.value) : input.value;
+        // Use parseFloat for number types to capture decimals (if needed)
+        let value = (input.type === "number") ? parseFloat(input.value) : input.value;
         hyperparams[input.id] = value;
     });
 
-    let apiUrl = "";
-    if (model === "random_forest") {
-        apiUrl = "/train-random-forest";
-    } else if (model === "logistic_regression") {
-        apiUrl = "/train-logistic-regression";  // Placeholder
-    } else if (model === "gradient_boosting") {
-        apiUrl = "/train-gradient-boosting";  // Placeholder
+    // Build the payload: always include model and hyperparams.
+    let payload = {
+        model: model,
+        hyperparams: hyperparams
+    };
+    // Only include the optimization method if tuning mode is "optimization"
+    if (tuningMode === "optimization") {
+        payload.optimization_method = optimizationMethod;
     }
-
-    if (apiUrl === "") {
-        document.getElementById("train-result").innerHTML = `<strong>❌ API not implemented for ${model}</strong>`;
-        return;
-    }
+    
+    // Use the combined training endpoint
+    let apiUrl = "/train-model";
 
     fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: model, hyperparams: hyperparams })
+        body: JSON.stringify(payload)
     })
     .then(response => response.json())
     .then(data => {
@@ -416,16 +475,34 @@ function trainModel() {
         if (data.success) {
             resultBox.innerHTML = `
                 <strong>✅ Training Completed</strong><br>
-                <strong>House Price Accuracy:</strong> ${data.accuracy_price.toFixed(2) * 100}%<br>
-                <strong>House Type Accuracy:</strong> ${data.accuracy_type.toFixed(2) * 100}%<br>
+                ${data.best_params_price ? `<strong>Params:</strong> ${JSON.stringify(data.best_params_price)}<br><span>-----------------------------</span><br>` : ""}
+                <strong>House Price:</strong><br>
+                Accuracy: ${(data.accuracy_price * 100).toFixed(2)}%<br>
+                Precision: ${(data.precision_price * 100).toFixed(2)}%<br>
+                Recall: ${(data.recall_price * 100).toFixed(2)}%<br>
+                F1: ${(data.f1_price * 100).toFixed(2)}%<br>
+                <span>-----------------------------</span><br>
+                <strong>House Type:</strong><br>
+                Accuracy: ${(data.accuracy_type * 100).toFixed(2)}%<br>
+                Precision: ${(data.precision_type * 100).toFixed(2)}%<br>
+                Recall: ${(data.recall_type * 100).toFixed(2)}%<br>
+                F1: ${(data.f1_type * 100).toFixed(2)}%<br>
             `;
-            document.getElementById("price-cm").src = data.price_cm_path;
-            document.getElementById("type-cm").src = data.type_cm_path;
+            // Update confusion matrix image sources if elements exist
+            if (document.getElementById("price-cm")) {
+                document.getElementById("price-cm").src = data.price_cm_path;
+            }
+            if (document.getElementById("type-cm")) {
+                document.getElementById("type-cm").src = data.type_cm_path;
+            }
         } else {
             resultBox.innerHTML = `<strong>❌ Training Failed:</strong> ${data.error}`;
         }
     })
-    .catch(error => console.error("Error:", error));
+    .catch(error => {
+        console.error("Error:", error);
+        document.getElementById("train-result").innerHTML = `<strong>Error:</strong> ${error}`;
+    });
 }
 
 // Start preprocessing (POST method)
@@ -503,8 +580,8 @@ function predictModel() {
             tableHtml += `</tbody></table>`;
             
             resultBox.innerHTML = tableHtml;
-            downloadButton.classList.remove("hidden");
             downloadButton.dataset.filePath = data.csv_file;
+            downloadButton.style.display = "block";
         } else {
             resultBox.innerHTML = `<strong>Error:</strong> ${data.error}`;
         }
@@ -521,7 +598,7 @@ function downloadDataGenerated() {
 }
 
 function togglePredictSource() {
-    let source = document.getElementById("predict-source-selection").value;
+    let source = document.querySelector('input[name="predictSource"]:checked').value;
     if (source === "random") {
         document.getElementById("random-data-section").style.display = "block";
         document.getElementById("file-data-section").style.display = "none";
@@ -567,7 +644,8 @@ function predictModelFromCSV() {
                 "basement",
                 "guestroom",
                 "mainroad",
-                "hotwaterheating"
+                "hotwaterheating",
+                "furnishingstatus"
             ];
             
             // Build table header.
@@ -614,7 +692,7 @@ function loadTrainingLog() {
               }
               
               // Define the columns to display
-              const columns = ["Timestamp", "Model", "Hyperparameters", "Price", "Type"];
+              const columns = ["Timestamp", "Model", "Optimization", "Hyperparameters", "Price", "Type"];
               
               // Build table header. For Price and Type, add an extra header for the "View" button.
               let tableHtml = `<table class="table table-bordered"><thead><tr>`;
@@ -634,6 +712,7 @@ function loadTrainingLog() {
                   tableHtml += `<tr>`;
                   tableHtml += `<td>${entry["Timestamp"] || ""}</td>`;
                   tableHtml += `<td>${entry["Model"] || ""}</td>`;
+                  tableHtml += `<td>${entry["Optimization"] || ""}</td>`;
                   tableHtml += `<td>${entry["Hyperparameters"] || ""}</td>`;
                   // Price column: show accuracy and a button to view confusion matrix image.
                   tableHtml += 
