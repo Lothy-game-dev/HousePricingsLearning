@@ -395,7 +395,7 @@ function updateHyperparameterFields() {
         let paramInfo = hyperparams[param];
 
         let label = document.createElement("label");
-        label.innerHTML = `<strong>${param}:</strong> <small>${paramInfo.description || ""}</small>`;
+        label.innerHTML = `<strong>${param}:</strong> <small>${paramInfo.description || ""}&nbsp;</small>`;
         form.appendChild(label);
 
         let input;

@@ -22,7 +22,7 @@ AVAILABLE_MODELS = {
     "logistic_regression": {
         "C": {"type": "float", "default": 1.0, "description": "Inverse of regularization strength"},
         "max_iter": {"type": "int", "default": 100, "description": "Maximum number of iterations"},
-        "solver": {"type": "str", "default": "lbfgs", "options": ["newton-cg", "lbfgs", "sag", "saga"]}
+        "solver": {"type": "str", "default": "lbfgs", "options": ["newton-cg", "lbfgs", "sag", "saga"], "description": "Algorithm to use in the optimization problem"}
     },
     "random_forest": {
         "n_estimators": {"type": "int", "default": 200, "description": "Number of trees in the forest"},
